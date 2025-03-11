@@ -1,0 +1,7 @@
+[
+  "error EmptyArgs()",
+  "error EmptySecrets()",
+  "error EmptySource()",
+  "error NoInlineSecrets()",
+  "function REQUEST_DATA_VERSION() view returns (uint16)"
+]

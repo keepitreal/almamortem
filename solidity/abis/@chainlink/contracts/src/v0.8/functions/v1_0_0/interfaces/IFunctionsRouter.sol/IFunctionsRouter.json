@@ -1,0 +1,16 @@
+[
+  "function fulfill(bytes,bytes,uint96,uint96,address,tuple(bytes32,address,uint96,address,uint64,uint32,uint72,uint72,uint40,uint40,uint32)) returns (uint8, uint96)",
+  "function getAdminFee() view returns (uint72)",
+  "function getAllowListId() view returns (bytes32)",
+  "function getContractById(bytes32) view returns (address)",
+  "function getProposedContractById(bytes32) view returns (address)",
+  "function getProposedContractSet() view returns (bytes32[], address[])",
+  "function isValidCallbackGasLimit(uint64,uint32) view",
+  "function pause()",
+  "function proposeContractsUpdate(bytes32[],address[])",
+  "function sendRequest(uint64,bytes,uint16,uint32,bytes32) returns (bytes32)",
+  "function sendRequestToProposed(uint64,bytes,uint16,uint32,bytes32) returns (bytes32)",
+  "function setAllowListId(bytes32)",
+  "function unpause()",
+  "function updateContracts()"
+]

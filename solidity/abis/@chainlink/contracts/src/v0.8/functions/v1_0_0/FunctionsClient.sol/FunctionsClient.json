@@ -1,0 +1,6 @@
+[
+  "error OnlyRouterCanFulfill()",
+  "event RequestFulfilled(bytes32 indexed)",
+  "event RequestSent(bytes32 indexed)",
+  "function handleOracleFulfillment(bytes32,bytes,bytes)"
+]

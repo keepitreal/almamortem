@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'AnimeAce';
+  src: url('/fonts/animeace2bb_ot/animeace2_bld.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'AnimeAce';
+  src: url('/fonts/animeace2bb_ot/animeace2_reg.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+html {
+  background-color: oklch(var(--b2)) !important;
+}
+
+html, body {
+  font-family: 'AnimeAce', 'Roboto', sans-serif;
+  font-weight: 400;
+}
+
+/* Bracket Connectors */
+.matchup-connector {
+  position: absolute;
+  z-index: -1;
+  background: linear-gradient(oklch(var(--s)), oklch(var(--s))) no-repeat center/2px 100%;
+}
+
+.matchup-connector-left,
+.matchup-connector-right {
+  position: absolute;
+  display: block;
+  content: '';
+  background: oklch(var(--s));
+  height: 2px;
+  box-sizing: border-box;
+}
+
+.matchup-connector-left {
+  z-index: -1;
+  left: 0;
+  right: calc(100% + 2px);
+  width: 50%;
+}
+
+.matchup-connector-left-rightside {
+  left: auto;
+  right: 0;
+}
+
+.matchup-connector-left-bottom {
+  top: calc(100% - 1px);
+}
+
+.matchup-connector-right {
+  z-index: -1;
+  top: 100%;
+  right: 0;
+  width: 50%;
+}
+
+.matchup-connector-right-rightside {
+  right: auto;
+  left: 0;
+}
+
+.matchup-connector-right-bottom {
+  top: auto;
+  bottom: 100%;
+}
+
+.round-wrapper {
+  padding-top: 30px;
+}
+
+.round-wrapper:before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  content: attr(data-round);
+  font-size: 12px;
+  font-weight: 600;
+  color: oklch(var(--s));
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+.matchup-team {
+  border-radius: 0px !important;
+  border-right: 5px solid oklch(var(--s));
+  border-left: 5px solid oklch(var(--s));
+}
+
+.matchup-team-right {
+  border-right: 5px solid oklch(var(--s));
+  border-bottom: 5px solid oklch(var(--s));
+}
+
+.matchup-team-left {
+  border-left: 5px solid oklch(var(--s));
+  border-top: 5px solid oklch(var(--s));
+}
+
+.matchup-team-left:before {
+  content: "";
+  position: absolute;
+  background: linear-gradient(to top, white 0%, transparent 70%);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100px;
+  z-index: 3;
+  transform: none;
+}
+
+.matchup-team-right:before {
+  content: "";
+  position: absolute;
+  background: linear-gradient(to bottom, white 0%, transparent 70%);
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100px;
+  z-index: 3;
+  transform: none;
+}
+
+.versus-symbol {
+  z-index:-2;
+}
+
+.versus:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 25px;
+  height: 100%;
+  left: calc(100% - 12px);
+  background-color: oklch(var(--pc));
+  transform: skew(-25deg);
+  z-index: -1;
+}
+
+.versus:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(100% - 12px);
+  width: 25px;
+  background-color: oklch(var(--pc));
+  transform: skew(-25deg);
+  z-index: -1;
+}
+
+.versus {
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.versus-right:after {
+  right: calc(100% - 12px);
+}
+
+.versus-left {
+  position: relative;
+  border-bottom: 5px solid oklch(var(--s));
+  border-left: 5px solid oklch(var(--s));
+}
+
+.versus-left:after {
+  display: none;
+}
+
+.versus-right {
+  border-top: 5px solid oklch(var(--s));
+  border-right: 5px solid oklch(var(--s));
+}
+
+.versus-right:before {
+  display: none;
+}
+
+.versus {
+  z-index: 1;
+}
+
+.preview-matchup-button {
+  background-color: oklch(var(--p));
+  color: oklch(var(--pc));
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  z-index: 10000;
+}
+
+.matchup-team-bg {
+  background-color: oklch(var(--pc));
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  right: 0;
+}
+
+/* Override onchainkit button font. Hopefully there is a better way to do this. */
+.ock-font-family.font-semibold.ock-text-inverse.flex.justify-center {
+  font-family: 'AnimeAce', 'Roboto', sans-serif !important;
+}
+
+.final-four-team-namecard {
+  background-color: oklch(var(--pc));
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: auto;
+}
+
+.final-four-team-namecard-bottom {
+  left: auto;
+  right: 0;
+}
+
+.championship-team-namecard {
+  background-color: oklch(var(--pc));
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.championship-team-namecard:before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100px;
+  background: linear-gradient(to top, oklch(var(--pc)) 0%, transparent 100%);
+}
+
+.final-four-heading {
+  position: relative;
+  top: 2px;
+  z-index: 1;
+  padding: 8px 0;
+}
+
+.championship-heading {
+  position: relative;
+  padding: 8px 0;
+  z-index: 10000;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
