@@ -1,13 +1,21 @@
-import { type Call } from "node_modules/@coinbase/onchainkit/src/transaction/types"
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 import { defineChain, encode, getContract, ZERO_ADDRESS } from "thirdweb";
 import { approve } from "thirdweb/extensions/erc20";
 import { isAddressEqual } from "viem";
 
 import { CLIENT, DEFAULT_CHAIN, TOURNAMENT_ADDRESS } from "~/constants";
 import { useBracket } from "~/context/BracketContext";
-import { enterTournament, getTournament } from "~/thirdweb/84532/0xc86fe09b4c9ef65b0180f60610d29a9f096310f1";
+import {
+  enterTournament,
+  getTournament,
+} from "~/thirdweb/84532/0xc86fe09b4c9ef65b0180f60610d29a9f096310f1";
 import { getBracketHash } from "~/utils/bracketHash";
+
+type Call = {
+  to: `0x${string}`;
+  data: `0x${string}`;
+  value?: bigint;
+};
 
 export const useEnterTournamentCalls = ({
   address,
@@ -30,10 +38,10 @@ export const useEnterTournamentCalls = ({
       }
       try {
         const newCalls: Call[] = [];
-        
+
         // Generate the bracket hash and verification arrays
         const bracketHash = getBracketHash(userPicks);
-        
+
         const contract = getContract({
           client: CLIENT,
           address: TOURNAMENT_ADDRESS[DEFAULT_CHAIN.id]!,
@@ -94,6 +102,6 @@ export const useEnterTournamentCalls = ({
   }, [address, bracketURI, tournamentId, userPicks]);
 
   return {
-    calls
+    calls,
   };
 };
