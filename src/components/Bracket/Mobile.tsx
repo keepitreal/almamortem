@@ -108,12 +108,7 @@ export const Mobile: FC<MobileProps> = ({ tournamentId }) => {
           picks.
         </p>
         <div className="mt-8">
-          <Controls
-            onSubmit={handleSubmitBracket}
-            isSaving={isSaving}
-            address={account?.address as `0x${string}`}
-            tournamentId={Number(tournamentId)}
-          />
+          <Controls isSaving={isSaving} tournamentId={Number(tournamentId)} />
         </div>
       </div>
     );

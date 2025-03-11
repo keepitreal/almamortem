@@ -1,4 +1,4 @@
-import type { RoundName } from "~/utils/bracketUtils";
+import type { RoundName } from "~/types/bracket";
 
 interface BracketProgressProps {
   currentRound: RoundName;

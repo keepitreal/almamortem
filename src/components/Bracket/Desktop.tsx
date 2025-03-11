@@ -143,11 +143,7 @@ export const Desktop: FC<DesktopProps> = ({ tournamentId }) => {
             </div>
           </div>
         </div>
-        <Controls
-          isSaving={isSaving}
-          address={account?.address as `0x${string}`}
-          tournamentId={Number(tournamentId)}
-        />
+        <Controls isSaving={isSaving} tournamentId={Number(tournamentId)} />
       </div>
     </div>
   );

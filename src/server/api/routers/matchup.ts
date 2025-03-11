@@ -162,7 +162,7 @@ function determineRoundFromNote(note: string): Matchup["round"] | null {
 const SEASON_DATES_2024 = "20240320-20240431";
 const SEASON_DATES_2025 = "20250318-20250408";
 
-const EVENT_PROGRESSION =
+const EVENT_PROGRESSION: Record<string, string> =
   SEASON === 2024 ? EVENT_PROGRESSION_2024 : EVENT_PROGRESSION_2025;
 const DATES = SEASON === 2024 ? SEASON_DATES_2024 : SEASON_DATES_2025;
 

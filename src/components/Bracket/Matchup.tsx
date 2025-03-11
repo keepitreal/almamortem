@@ -88,6 +88,7 @@ export const Matchup: React.FC<MatchupProps> = ({
       style={{
         width: `${width}px`,
         zIndex: 2,
+        // @ts-expect-error-line
         anchorName: `--matchup-${matchup.id}`,
         height: `${height}px`,
       }}
