@@ -23,7 +23,7 @@ const TeamColumn: React.FC<TeamRowProps> = ({
   hasWinner,
 }) => {
   const teamImage = team
-    ? `url('/images/teams/${ROUND_TO_ROUND_ABBREVIATION[round]}/${team.id}.png')`
+    ? `url(${process.env.NEXT_PUBLIC_URL ?? ""}/images/teams/${ROUND_TO_ROUND_ABBREVIATION[round]}/${team.id}.png)`
     : "";
   return (
     <button

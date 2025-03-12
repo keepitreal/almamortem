@@ -66,7 +66,6 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
     useState<Matchup["round"]>("Round of 64");
   const [isClient, setIsClient] = useState(false);
 
-  console.log({ matchups, teams });
   // Set isClient to true once component mounts
   useEffect(() => {
     setIsClient(true);
