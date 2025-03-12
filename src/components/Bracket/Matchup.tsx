@@ -22,8 +22,9 @@ const TeamColumn: React.FC<TeamRowProps> = ({
   round,
   hasWinner,
 }) => {
+  const roundAbbreviation = ROUND_TO_ROUND_ABBREVIATION[round].toLowerCase();
   const teamImage = team
-    ? `url(${process.env.NEXT_PUBLIC_URL ?? ""}/images/teams/${ROUND_TO_ROUND_ABBREVIATION[round]}/${team.id}.png)`
+    ? `url(${process.env.NEXT_PUBLIC_URL ?? ""}/images/teams/${roundAbbreviation}/${team.id}.png)`
     : "";
   return (
     <button

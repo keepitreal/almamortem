@@ -58,12 +58,12 @@ export interface BracketState {
 }
 
 export const ROUND_TO_ROUND_ABBREVIATION: Record<RoundName, string> = {
-  "Round of 64": "R64",
-  "Round of 32": "R32",
-  "Sweet 16": "S16",
-  "Elite 8": "E8",
-  "Final 4": "F4",
-  Championship: "Champ",
+  "Round of 64": "r64",
+  "Round of 32": "r32",
+  "Sweet 16": "s16",
+  "Elite 8": "e8",
+  "Final 4": "f4",
+  Championship: "champ",
 };
 
 export const regionToUniversityNamesDemo = {
