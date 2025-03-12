@@ -8,6 +8,7 @@ interface TeamRowProps {
   isTopTeam?: boolean;
   height?: number;
   round: RoundName;
+  hasWinner: boolean;
 }
 
 const MATCHUP_HEIGHT = 170;
@@ -19,15 +20,16 @@ const TeamColumn: React.FC<TeamRowProps> = ({
   isTopTeam = false,
   height,
   round,
+  hasWinner,
 }) => {
-  const teamImage = isTopTeam
-    ? `url('/images/teams/${ROUND_TO_ROUND_ABBREVIATION[round]}/baylor.png')`
-    : `url('/images/teams/${ROUND_TO_ROUND_ABBREVIATION[round]}/coleman.png')`;
+  const teamImage = team
+    ? `url('/images/teams/${ROUND_TO_ROUND_ABBREVIATION[round]}/${team.id}.png')`
+    : "";
   return (
     <button
       className={`relative flex w-1/2 items-center justify-between px-4 py-3 transition-all ${
         team ? "hover:bg-base-200" : ""
-      } ${isTopTeam ? "rounded-t-md" : "rounded-b-md border-l-2 border-secondary"}`}
+      } ${isTopTeam ? "rounded-t-md" : "border-l-2"} border-primary`}
       onClick={onSelect}
       disabled={!team}
       style={
@@ -43,7 +45,16 @@ const TeamColumn: React.FC<TeamRowProps> = ({
             }
       }
     >
-      <div className="matchup-team-bg flex w-full justify-between px-2 py-1">
+      {team && !isSelected && hasWinner && (
+        <div className="absolute inset-0 bg-primary opacity-40" />
+      )}
+      <div
+        className="matchup-team-bg flex w-full justify-between px-2 py-1"
+        style={{
+          borderBottomLeftRadius: isTopTeam ? "4px" : "0px",
+          borderBottomRightRadius: isTopTeam ? "0px" : "4px",
+        }}
+      >
         {team ? (
           <div className="flex w-full justify-between">
             <div className="flex flex-col items-start bg-primary-content">
@@ -84,7 +95,7 @@ export const Matchup: React.FC<MatchupProps> = ({
 }) => {
   return (
     <div
-      className="group card relative flex flex-row overflow-hidden overflow-visible rounded-md border border-2 border-secondary bg-primary-content transition-all"
+      className="group card relative box-content flex flex-row overflow-hidden overflow-visible rounded-md border border-2 border-secondary bg-primary-content transition-all"
       style={{
         width: `${width}px`,
         zIndex: 2,
@@ -93,9 +104,6 @@ export const Matchup: React.FC<MatchupProps> = ({
         height: `${height}px`,
       }}
     >
-      <div className="preview-matchup-button hidden cursor-pointer py-2 text-center text-xs font-bold uppercase tracking-wider text-white opacity-80 group-hover:block">
-        Preview Matchup
-      </div>
       <TeamColumn
         team={matchup.topTeam}
         isSelected={matchup.winner === matchup.topTeam?.id}
@@ -103,6 +111,7 @@ export const Matchup: React.FC<MatchupProps> = ({
         height={height}
         isTopTeam
         round={matchup.round}
+        hasWinner={!!matchup.winner}
       />
       <TeamColumn
         team={matchup.bottomTeam}
@@ -110,6 +119,7 @@ export const Matchup: React.FC<MatchupProps> = ({
         onSelect={() => matchup.bottomTeam && onTeamSelect(matchup.bottomTeam)}
         height={height}
         round={matchup.round}
+        hasWinner={!!matchup.winner}
       />
     </div>
   );

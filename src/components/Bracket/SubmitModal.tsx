@@ -3,7 +3,7 @@ import {
   TransactionButton,
 } from "@coinbase/onchainkit/transaction";
 import { type LifecycleStatus } from "@coinbase/onchainkit/transaction";
-import { type FC,useCallback, useState } from "react";
+import { type FC, useCallback, useState } from "react";
 import { toast } from "react-toastify";
 import { upload } from "thirdweb/storage";
 import { useAccount } from "wagmi";
@@ -20,10 +20,7 @@ interface SubmitModalProps {
   tournamentId: number;
 }
 
-const SubmitModal: FC<SubmitModalProps> = ({
-  modalId,
-  tournamentId,
-}) => {
+const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
   const { address, isConnected } = useAccount();
   const [isUploading, setIsUploading] = useState(false);
   const [ipfsUri, setIpfsUri] = useState<string | null>(null);
@@ -37,37 +34,40 @@ const SubmitModal: FC<SubmitModalProps> = ({
   const { userPicks } = useBracket();
   const teams = useTeams();
 
-  
   const onStatusChange = (status: LifecycleStatus) => {
-    console.log(status);
+    // console.log(status);
   };
 
-  // handle modal open will upload NFT data to IPFS. 
+  // handle modal open will upload NFT data to IPFS.
   // Having a IPFS uri will kick off the generation of tx calls.
   // once there are tx calls, the submit button will be enabled.
   const handleModalOpen = useCallback(async () => {
-    console.log("modal open");
     if (!isConnected) {
       toast.error("Please connect your wallet to submit your bracket");
       return;
     }
     // find the team id with the most wins picked by the user
-    const teamId = userPicks.reduce((counts, pick) => {
-      const winnerId = pick.winner;
-      if (winnerId) {
-        counts[winnerId] = (counts[winnerId] || 0) + 1;
-      }
-      return counts;
-    }, {} as Record<string, number>);
+    const teamId = userPicks.reduce(
+      (counts, pick) => {
+        const winnerId = pick.winner;
+        if (winnerId) {
+          counts[winnerId] = (counts[winnerId] || 0) + 1;
+        }
+        return counts;
+      },
+      {} as Record<string, number>,
+    );
 
     // Get the team with the highest count
     const mostPickedTeamId = Object.entries(teamId).reduce(
-      (mostPicked, [id, count]) => 
+      (mostPicked, [id, count]) =>
         count > mostPicked.count ? { id, count } : mostPicked,
-      { id: '', count: 0 }
+      { id: "", count: 0 },
     ).id;
 
-    const mostPickedTeam = teams.data?.find((team) => team.id === mostPickedTeamId);
+    const mostPickedTeam = teams.data?.find(
+      (team) => team.id === mostPickedTeamId,
+    );
 
     if (!mostPickedTeam) {
       toast.error("No winning team found in bracket");
@@ -83,17 +83,18 @@ const SubmitModal: FC<SubmitModalProps> = ({
             name: `${APP_NAME} Bracket`,
             data: {
               name: `${APP_NAME} Bracket`,
-              description: "A detailed description of my NFT artwork or collectible.",
+              description:
+                "A detailed description of my NFT artwork or collectible.",
               image: mostPickedTeam.logoUrl,
               external_url: `${APP_URL}`,
               attributes: [
                 {
                   trait_type: "Winning Team",
-                  value: mostPickedTeam.name
+                  value: mostPickedTeam.name,
                 },
                 {
                   trait_type: "Tournament ID",
-                  value: tournamentId
+                  value: tournamentId,
                 },
               ],
               // map to the minimum amount of data needed to reconstruct the bracket
@@ -107,10 +108,10 @@ const SubmitModal: FC<SubmitModalProps> = ({
                   id: pick.bottomTeam?.id,
                 },
                 winner: pick.winner,
-              }))
+              })),
             },
           },
-        ]
+        ],
       });
       console.log({ uri });
       setIpfsUri(uri);
@@ -124,25 +125,38 @@ const SubmitModal: FC<SubmitModalProps> = ({
 
   return (
     <>
-      <label htmlFor={modalId} className="btn btn-primary">Submit Bracket</label>
+      <label htmlFor={modalId} className="btn btn-primary">
+        Submit Bracket
+      </label>
 
       <Portal>
-        <input type="checkbox" onClick={() => handleModalOpen()} id={modalId} className="modal-toggle" />
+        <input
+          type="checkbox"
+          onClick={() => handleModalOpen()}
+          id={modalId}
+          className="modal-toggle"
+        />
         <div className="modal" role="dialog">
           <div className="modal-box">
-            <h3 className="font-bold text-lg text-center">Submit Bracket</h3>
+            <h3 className="text-center text-lg font-bold">Submit Bracket</h3>
             <div className="py-4 text-start">
               <p>This will submit your bracket and cannot be undone.</p>
             </div>
             <div className="modal-action">
-              <label htmlFor={modalId} className="btn btn-ghost" onClick={() => setIpfsUri(null)}>Cancel</label>
+              <label
+                htmlFor={modalId}
+                className="btn btn-ghost"
+                onClick={() => setIpfsUri(null)}
+              >
+                Cancel
+              </label>
               <Transaction
                 chainId={DEFAULT_CHAIN.id}
                 calls={calls}
                 className="flex justify-end"
                 onStatus={onStatusChange}
               >
-                <TransactionButton 
+                <TransactionButton
                   className="btn btn-primary rounded-none font-anime"
                   text="Submit Bracket"
                   disabled={calls.length === 0 || isUploading}
@@ -150,7 +164,13 @@ const SubmitModal: FC<SubmitModalProps> = ({
               </Transaction>
             </div>
           </div>
-          <label className="modal-backdrop" htmlFor={modalId} onClick={() => setIpfsUri(null)}>Close</label>
+          <label
+            className="modal-backdrop"
+            htmlFor={modalId}
+            onClick={() => setIpfsUri(null)}
+          >
+            Close
+          </label>
         </div>
       </Portal>
     </>
