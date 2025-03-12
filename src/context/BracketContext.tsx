@@ -60,6 +60,7 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { data: teams, isLoading: isLoadingTeams } = useTeams();
+  console.log({ teams });
   const { data: matchups, isLoading: isLoadingMatchups } = useMatchups();
   const [currentRound, setCurrentRound] =
     useState<Matchup["round"]>("Round of 64");
