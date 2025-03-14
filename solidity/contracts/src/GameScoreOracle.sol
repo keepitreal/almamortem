@@ -13,7 +13,7 @@ contract GameScoreOracle is ConfirmedOwner, FunctionsClient {
         "const teamWinCounts = {};"
         "async function fetchAndProcessData(dateRange) {"
         "  const apiResponse = await Functions.makeHttpRequest({"
-        "    url: `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${dateRange}`"
+        "    url: `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${dateRange}?groups=50`"
         "  });"
         "  if (apiResponse.error) throw Error(\"Request failed\");"
         "  const { data } = apiResponse;"
