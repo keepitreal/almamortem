@@ -160,7 +160,7 @@ function determineRoundFromNote(note: string): Matchup["round"] | null {
 }
 
 const SEASON_DATES_2024 = "20240321-20240409&groups=50";
-const SEASON_DATES_2025 = "20250320-20250412&groups=50";
+const SEASON_DATES_2025 = "20250320-20250408&groups=50";
 
 const EVENT_PROGRESSION: Record<string, string> =
   SEASON === 2024 ? EVENT_PROGRESSION_2024 : EVENT_PROGRESSION_2025;
@@ -181,12 +181,15 @@ export const matchupRouter = createTRPCRouter({
 
     const allTeams = await getAllTeams();
 
-    // Filter out First Four games
+    // Filter out games that are not in the main tournament
     const mainTournamentEvents = events.filter((event) => {
       const competition = event.competitions[0];
       if (!competition?.notes?.length) return false;
       const note = competition.notes[0]?.headline ?? "";
-      return !note.includes("First Four");
+      
+      // Check if the note indicates this is a tournament game
+      // Look for "Men's Basketball Championship" in the headline
+      return note.includes("Men's Basketball Championship") && !note.includes("First Four");
     });
 
     // Map the events to our Matchup type with proper nextMatchupId
