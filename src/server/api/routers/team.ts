@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { redis } from "~/lib/redis";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import type { Team } from "~/types/bracket";
 
@@ -33,6 +34,14 @@ interface ESPNResponse {
 const regions = ["West", "East", "South", "Midwest"] as const;
 
 export async function getAllTeams(): Promise<Team[]> {
+  // Try to get cached data
+  const cachedTeams = await redis.get<Team[]>("espn-teams");
+  if (cachedTeams) {
+    console.log("Returning cached team data");
+    return cachedTeams;
+  }
+
+  console.log("Fetching new team data");
   let allTeams: ESPNTeam[] = [];
   let page = 0;
   let hasMorePages = true;
@@ -58,7 +67,7 @@ export async function getAllTeams(): Promise<Team[]> {
   }
 
   // Transform ESPN team data to our Team interface
-  return allTeams.map((espnTeam): Team => {
+  const teams = allTeams.map((espnTeam): Team => {
     const team = espnTeam.team;
     const defaultLogo =
       team.logos.find((logo) => logo.rel.includes("default"))?.href ?? "";
@@ -84,6 +93,13 @@ export async function getAllTeams(): Promise<Team[]> {
       logoUrl: defaultLogo,
     };
   });
+
+  // Cache the results for 1 hour
+  await redis.set("espn-teams", teams, {
+    ex: 3600, // 1 hour in seconds
+  });
+
+  return teams;
 }
 
 export const teamRouter = createTRPCRouter({

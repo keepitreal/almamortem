@@ -64,6 +64,7 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentRound, setCurrentRound] =
     useState<Matchup["round"]>("Round of 64");
   const [isClient, setIsClient] = useState(false);
+  const [lastPickTime, setLastPickTime] = useState<number | null>(null);
 
   // Set isClient to true once component mounts
   useEffect(() => {
@@ -137,17 +138,17 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [userPicks]);
 
-  // Save to localStorage whenever userPicks changes, but only on client
-  useEffect(() => {
-    if (isClient && userPicks.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(userPicks));
-    }
-  }, [isClient, userPicks]);
-
   const currentMatchup = useMemo(
     () => userPicks.find((pick) => pick.id === currentMatchupId),
     [userPicks, currentMatchupId],
   );
+
+  // Save to localStorage whenever a pick is made
+  useEffect(() => {
+    if (isClient && lastPickTime && userPicks.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(userPicks));
+    }
+  }, [isClient, lastPickTime, userPicks]);
 
   const setWinner = (matchupId: number, winnerId: string) => {
     setUserPicks((picks) => {
@@ -210,6 +211,9 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
         return pick;
       });
     });
+
+    // Update lastPickTime to trigger localStorage save
+    setLastPickTime(Date.now());
 
     // Find the next unfinished matchup in the current round
     const currentRoundMatchups = userPicks.filter(
