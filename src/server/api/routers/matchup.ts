@@ -4,6 +4,7 @@ import {
   SEASON,
 } from "~/constants";
 import { EVENT_PROGRESSION_2025 } from "~/constants";
+import { redis } from "~/lib/redis";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import type { Matchup, Region } from "~/types/bracket";
 
@@ -168,6 +169,13 @@ const DATES = SEASON === 2024 ? SEASON_DATES_2024 : SEASON_DATES_2025;
 
 export const matchupRouter = createTRPCRouter({
   getAll: publicProcedure.query(async (): Promise<Matchup[]> => {
+    // Try to get cached data with DATES-specific key
+    const cacheKey = `espn-matchups-${DATES}`;
+    const cachedData = await redis.get<Matchup[]>(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
     const response = await fetch(
       `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${DATES}`,
     );
@@ -186,10 +194,13 @@ export const matchupRouter = createTRPCRouter({
       const competition = event.competitions[0];
       if (!competition?.notes?.length) return false;
       const note = competition.notes[0]?.headline ?? "";
-      
+
       // Check if the note indicates this is a tournament game
       // Look for "Men's Basketball Championship" in the headline
-      return note.includes("Men's Basketball Championship") && !note.includes("First Four");
+      return (
+        note.includes("Men's Basketball Championship") &&
+        !note.includes("First Four")
+      );
     });
 
     // Map the events to our Matchup type with proper nextMatchupId
@@ -305,6 +316,11 @@ export const matchupRouter = createTRPCRouter({
     // Add potentialSeeds to each matchup
     const matchupsWithPotentialSeeds =
       addPotentialSeedsToMatchups(finalMatchups);
+
+    // Cache the results for 5 minutes with the DATES-specific key
+    await redis.set(cacheKey, matchupsWithPotentialSeeds, {
+      ex: 300, // 5 minutes in seconds
+    });
 
     return matchupsWithPotentialSeeds;
   }),
