@@ -23,8 +23,19 @@ export const env = createEnv({
       process.env.VERCEL ? z.string() : z.string().url(),
     ),
     ADMIN_PRIVATE_KEY: z.string(),
-    UPSTASH_REDIS_REST_URL: z.string().url(),
-    UPSTASH_REDIS_REST_TOKEN: z.string(),
+    UPSTASH_REDIS_REST_URL: z.preprocess(
+      // This makes Vercel deployments not fail if you don't set UPSTASH_REDIS_REST_URL
+      (str) => (process.env.VERCEL_URL ? str : str),
+      // Allow any string in Vercel environment, require URL in development
+      process.env.VERCEL ? z.string() : z.string().url(),
+    ),
+    UPSTASH_REDIS_REST_TOKEN: z.preprocess(
+      // Make token optional in development, required in production
+      (str) => str,
+      process.env.NODE_ENV === "production"
+        ? z.string()
+        : z.string().optional(),
+    ),
   },
 
   /**
