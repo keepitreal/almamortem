@@ -123,6 +123,7 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
         setUserPicks(stored);
       } else {
         const initializedPicks = initializeUserPicks(matchups, teams);
+        console.log("initializedPicks", initializedPicks);
         setUserPicks(initializedPicks);
       }
     }
