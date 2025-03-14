@@ -172,11 +172,9 @@ export const matchupRouter = createTRPCRouter({
     // Try to get cached data
     const cachedData = await redis.get<Matchup[]>("espn-matchups");
     if (cachedData) {
-      console.log("Returning cached data");
       return cachedData;
     }
 
-    console.log("Fetching new data");
     const response = await fetch(
       `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${DATES}`,
     );
