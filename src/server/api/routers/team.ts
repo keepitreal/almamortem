@@ -37,11 +37,9 @@ export async function getAllTeams(): Promise<Team[]> {
   // Try to get cached data
   const cachedTeams = await redis.get<Team[]>("espn-teams");
   if (cachedTeams) {
-    console.log("Returning cached team data");
     return cachedTeams;
   }
 
-  console.log("Fetching new team data");
   let allTeams: ESPNTeam[] = [];
   let page = 0;
   let hasMorePages = true;
