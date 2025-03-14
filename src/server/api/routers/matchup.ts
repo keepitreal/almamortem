@@ -169,8 +169,9 @@ const DATES = SEASON === 2024 ? SEASON_DATES_2024 : SEASON_DATES_2025;
 
 export const matchupRouter = createTRPCRouter({
   getAll: publicProcedure.query(async (): Promise<Matchup[]> => {
-    // Try to get cached data
-    const cachedData = await redis.get<Matchup[]>("espn-matchups");
+    // Try to get cached data with DATES-specific key
+    const cacheKey = `espn-matchups-${DATES}`;
+    const cachedData = await redis.get<Matchup[]>(cacheKey);
     if (cachedData) {
       return cachedData;
     }
@@ -316,8 +317,8 @@ export const matchupRouter = createTRPCRouter({
     const matchupsWithPotentialSeeds =
       addPotentialSeedsToMatchups(finalMatchups);
 
-    // Cache the results for 5 minutes
-    await redis.set("espn-matchups", matchupsWithPotentialSeeds, {
+    // Cache the results for 5 minutes with the DATES-specific key
+    await redis.set(cacheKey, matchupsWithPotentialSeeds, {
       ex: 300, // 5 minutes in seconds
     });
 
