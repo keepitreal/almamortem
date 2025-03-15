@@ -43,9 +43,8 @@ export const NFT_ADDRESS: Record<number, Address> = {
   [baseSepolia.id]: "0xc0151ec9FFdEF918Ae7bDA7EED147Fa4C0a10409",
 };
 
-export const SEASON = 2024;
+export const SEASON = 2024; // 2025
 export const RANDOM_ROUND_OF_64 = false; // useful if testing a year where teams arent announced yet
-export const ASSIGN_REGIONS_RANDOMLY = false; // the 2025 data doesn't have regions for matchups so we'll use this to assign them randomly
 
 export const INITIAL_SEED_PAIRS = [
   [1, 16],

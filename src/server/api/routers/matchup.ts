@@ -168,10 +168,16 @@ const EVENT_PROGRESSION: Record<string, string> =
   SEASON === 2024 ? EVENT_PROGRESSION_2024 : EVENT_PROGRESSION_2025;
 const DATES = SEASON === 2024 ? SEASON_DATES_2024 : SEASON_DATES_2025;
 
-export async function getMatchups(): Promise<{ matchupsWithPotentialSeeds: Matchup[], espnTeamIdToDerivedTeamId: Record<string, string> }> {
+export async function getMatchups(): Promise<{
+  matchupsWithPotentialSeeds: Matchup[];
+  espnTeamIdToDerivedTeamId: Record<string, string>;
+}> {
   // Try to get cached data with DATES-specific key
-  const cacheKey = `espn-matchups-${DATES}`;
-  const cachedData = await redis.get<{ matchupsWithPotentialSeeds: Matchup[], espnTeamIdToDerivedTeamId: Record<string, string> }>(cacheKey);
+  const cacheKey = `espn-matchups-${DATES}-v2`;
+  const cachedData = await redis.get<{
+    matchupsWithPotentialSeeds: Matchup[];
+    espnTeamIdToDerivedTeamId: Record<string, string>;
+  }>(cacheKey);
   if (cachedData) {
     return cachedData;
   }
@@ -184,10 +190,17 @@ export async function getMatchups(): Promise<{ matchupsWithPotentialSeeds: Match
     throw new Error(`Failed to fetch matchups: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as ESPNResponse;
-  const events = data.events ?? [];
+  let data: ESPNResponse;
+  try {
+    data = (await response.json()) as ESPNResponse;
+  } catch (error) {
+    console.error("Error fetching ESPN data:", error);
+    throw error;
+  }
 
+  const events = data.events ?? [];
   const espnTeamIdToDerivedTeamId: Record<string, string> = {};
+
   const allTeams = await getAllTeams();
 
   // Filter out games that are not in the main tournament
@@ -225,12 +238,8 @@ export async function getMatchups(): Promise<{ matchupsWithPotentialSeeds: Match
     const awayTeamCompetitor = competition.competitors.find(
       (c) => c.homeAway === "away",
     );
-    const homeTeam = allTeams.find(
-      (t) => t.id === homeTeamCompetitor?.team.id,
-    );
-    const awayTeam = allTeams.find(
-      (t) => t.id === awayTeamCompetitor?.team.id,
-    );
+    const homeTeam = allTeams.find((t) => t.id === homeTeamCompetitor?.team.id);
+    const awayTeam = allTeams.find((t) => t.id === awayTeamCompetitor?.team.id);
 
     // Determine position based on the event's position within its round-region group
     const eventsInRoundRegion = mainTournamentEvents.filter((e) => {
@@ -257,9 +266,15 @@ export async function getMatchups(): Promise<{ matchupsWithPotentialSeeds: Match
       minute: "2-digit",
     });
 
-    const derivedHomeTeamId = generateTeamId(region, homeTeamCompetitor?.curatedRank.current ?? 16);
+    const derivedHomeTeamId = generateTeamId(
+      region,
+      homeTeamCompetitor?.curatedRank.current ?? 16,
+    );
     const espnHomeTeamId = homeTeamCompetitor?.team.id;
-    const derivedAwayTeamId = generateTeamId(region, awayTeamCompetitor?.curatedRank.current ?? 16);
+    const derivedAwayTeamId = generateTeamId(
+      region,
+      awayTeamCompetitor?.curatedRank.current ?? 16,
+    );
     const espnAwayTeamId = awayTeamCompetitor?.team.id;
 
     if (espnHomeTeamId && !espnTeamIdToDerivedTeamId[espnHomeTeamId]) {
@@ -328,21 +343,25 @@ export async function getMatchups(): Promise<{ matchupsWithPotentialSeeds: Match
   }));
 
   // Add potentialSeeds to each matchup
-  const matchupsWithPotentialSeeds =
-    addPotentialSeedsToMatchups(finalMatchups);
+  const matchupsWithPotentialSeeds = addPotentialSeedsToMatchups(finalMatchups);
 
-  // Cache the results for 5 minutes with the DATES-specific key
-  await redis.set(cacheKey, matchupsWithPotentialSeeds, {
+  // Create the complete data object
+  const completeData = {
+    matchupsWithPotentialSeeds,
+    espnTeamIdToDerivedTeamId,
+  };
+
+  // Cache the complete data object
+  await redis.set(cacheKey, completeData, {
     ex: 300, // 5 minutes in seconds
   });
 
-  return { matchupsWithPotentialSeeds, espnTeamIdToDerivedTeamId };
+  return completeData;
 }
 
 export const matchupRouter = createTRPCRouter({
   getAll: publicProcedure.query(async (): Promise<Matchup[]> => {
     const { matchupsWithPotentialSeeds } = await getMatchups();
-    console.log({ matchupsWithPotentialSeedsLength: matchupsWithPotentialSeeds.length })
     return matchupsWithPotentialSeeds;
   }),
 });
