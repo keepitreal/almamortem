@@ -49,6 +49,101 @@ export function bracketEnteredEvent(filters: BracketEnteredEventFilters = {}) {
   
 
 /**
+ * Represents the filters for the "DeveloperFeePaid" event.
+ */
+export type DeveloperFeePaidEventFilters = Partial<{
+  tournamentId: AbiParameterToPrimitiveType<{"indexed":true,"internalType":"uint256","name":"tournamentId","type":"uint256"}>
+}>;
+
+/**
+ * Creates an event object for the DeveloperFeePaid event.
+ * @param filters - Optional filters to apply to the event.
+ * @returns The prepared event object.
+ * @example
+ * ```
+ * import { getContractEvents } from "thirdweb";
+ * import { developerFeePaidEvent } from "TODO";
+ *
+ * const events = await getContractEvents({
+ * contract,
+ * events: [
+ *  developerFeePaidEvent({
+ *  tournamentId: ...,
+ * })
+ * ],
+ * });
+ * ```
+ */
+export function developerFeePaidEvent(filters: DeveloperFeePaidEventFilters = {}) {
+  return prepareEvent({
+    signature: "event DeveloperFeePaid(uint256 indexed tournamentId, uint256 amount)",
+    filters,
+  });
+};
+  
+
+
+
+/**
+ * Creates an event object for the EmergencyRefundEnabledStateChange event.
+ * @returns The prepared event object.
+ * @example
+ * ```
+ * import { getContractEvents } from "thirdweb";
+ * import { emergencyRefundEnabledStateChangeEvent } from "TODO";
+ *
+ * const events = await getContractEvents({
+ * contract,
+ * events: [
+ *  emergencyRefundEnabledStateChangeEvent()
+ * ],
+ * });
+ * ```
+ */
+export function emergencyRefundEnabledStateChangeEvent() {
+  return prepareEvent({
+    signature: "event EmergencyRefundEnabledStateChange(bool enabled)",
+  });
+};
+  
+
+/**
+ * Represents the filters for the "GameScoreOracleUpdated" event.
+ */
+export type GameScoreOracleUpdatedEventFilters = Partial<{
+  oldGameScoreOracle: AbiParameterToPrimitiveType<{"indexed":true,"internalType":"address","name":"oldGameScoreOracle","type":"address"}>
+newGameScoreOracle: AbiParameterToPrimitiveType<{"indexed":true,"internalType":"address","name":"newGameScoreOracle","type":"address"}>
+}>;
+
+/**
+ * Creates an event object for the GameScoreOracleUpdated event.
+ * @param filters - Optional filters to apply to the event.
+ * @returns The prepared event object.
+ * @example
+ * ```
+ * import { getContractEvents } from "thirdweb";
+ * import { gameScoreOracleUpdatedEvent } from "TODO";
+ *
+ * const events = await getContractEvents({
+ * contract,
+ * events: [
+ *  gameScoreOracleUpdatedEvent({
+ *  oldGameScoreOracle: ...,
+ *  newGameScoreOracle: ...,
+ * })
+ * ],
+ * });
+ * ```
+ */
+export function gameScoreOracleUpdatedEvent(filters: GameScoreOracleUpdatedEventFilters = {}) {
+  return prepareEvent({
+    signature: "event GameScoreOracleUpdated(address indexed oldGameScoreOracle, address indexed newGameScoreOracle)",
+    filters,
+  });
+};
+  
+
+/**
  * Represents the filters for the "OwnershipTransferred" event.
  */
 export type OwnershipTransferredEventFilters = Partial<{
@@ -229,41 +324,6 @@ export async function DEVELOPER_FEE(
 
 
 /**
- * Calls the "GAME_SCORE_ORACLE" function on the contract.
- * @param options - The options for the GAME_SCORE_ORACLE function.
- * @returns The parsed result of the function call.
- * @example
- * ```
- * import { GAME_SCORE_ORACLE } from "TODO";
- *
- * const result = await GAME_SCORE_ORACLE();
- *
- * ```
- */
-export async function GAME_SCORE_ORACLE(
-  options: BaseTransactionOptions
-) {
-  return readContract({
-    contract: options.contract,
-    method: [
-  "0x8032694f",
-  [],
-  [
-    {
-      "internalType": "contract GameScoreOracle",
-      "name": "",
-      "type": "address"
-    }
-  ]
-],
-    params: []
-  });
-};
-
-
-
-
-/**
  * Calls the "MAX_WINNERS" function on the contract.
  * @param options - The options for the MAX_WINNERS function.
  * @returns The parsed result of the function call.
@@ -299,41 +359,6 @@ export async function MAX_WINNERS(
 
 
 /**
- * Calls the "checkIfTournamentEndedIrl" function on the contract.
- * @param options - The options for the checkIfTournamentEndedIrl function.
- * @returns The parsed result of the function call.
- * @example
- * ```
- * import { checkIfTournamentEndedIrl } from "TODO";
- *
- * const result = await checkIfTournamentEndedIrl();
- *
- * ```
- */
-export async function checkIfTournamentEndedIrl(
-  options: BaseTransactionOptions
-) {
-  return readContract({
-    contract: options.contract,
-    method: [
-  "0xf125ce1a",
-  [],
-  [
-    {
-      "internalType": "bool",
-      "name": "",
-      "type": "bool"
-    }
-  ]
-],
-    params: []
-  });
-};
-
-
-
-
-/**
  * Calls the "developerTreasury" function on the contract.
  * @param options - The options for the developerTreasury function.
  * @returns The parsed result of the function call.
@@ -356,6 +381,76 @@ export async function developerTreasury(
   [
     {
       "internalType": "address",
+      "name": "",
+      "type": "address"
+    }
+  ]
+],
+    params: []
+  });
+};
+
+
+
+
+/**
+ * Calls the "emergencyRefundEnabled" function on the contract.
+ * @param options - The options for the emergencyRefundEnabled function.
+ * @returns The parsed result of the function call.
+ * @example
+ * ```
+ * import { emergencyRefundEnabled } from "TODO";
+ *
+ * const result = await emergencyRefundEnabled();
+ *
+ * ```
+ */
+export async function emergencyRefundEnabled(
+  options: BaseTransactionOptions
+) {
+  return readContract({
+    contract: options.contract,
+    method: [
+  "0x6c155769",
+  [],
+  [
+    {
+      "internalType": "bool",
+      "name": "",
+      "type": "bool"
+    }
+  ]
+],
+    params: []
+  });
+};
+
+
+
+
+/**
+ * Calls the "gameScoreOracle" function on the contract.
+ * @param options - The options for the gameScoreOracle function.
+ * @returns The parsed result of the function call.
+ * @example
+ * ```
+ * import { gameScoreOracle } from "TODO";
+ *
+ * const result = await gameScoreOracle();
+ *
+ * ```
+ */
+export async function gameScoreOracle(
+  options: BaseTransactionOptions
+) {
+  return readContract({
+    contract: options.contract,
+    method: [
+  "0xdd17da4e",
+  [],
+  [
+    {
+      "internalType": "contract GameScoreOracle",
       "name": "",
       "type": "address"
     }
@@ -428,6 +523,11 @@ export async function getTournament(
       "type": "uint256"
     },
     {
+      "internalType": "uint256",
+      "name": "developerFeeAccrued",
+      "type": "uint256"
+    },
+    {
       "internalType": "address[]",
       "name": "winners",
       "type": "address[]"
@@ -439,28 +539,103 @@ export async function getTournament(
 };
 
 
-
+/**
+ * Represents the parameters for the "getTournamentWinners" function.
+ */
+export type GetTournamentWinnersParams = {
+  tournamentId: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"tournamentId","type":"uint256"}>
+};
 
 /**
- * Calls the "isFinalizedIrl" function on the contract.
- * @param options - The options for the isFinalizedIrl function.
+ * Calls the "getTournamentWinners" function on the contract.
+ * @param options - The options for the getTournamentWinners function.
  * @returns The parsed result of the function call.
  * @example
  * ```
- * import { isFinalizedIrl } from "TODO";
+ * import { getTournamentWinners } from "TODO";
  *
- * const result = await isFinalizedIrl();
+ * const result = await getTournamentWinners({
+ *  tournamentId: ...,
+ * });
  *
  * ```
  */
-export async function isFinalizedIrl(
-  options: BaseTransactionOptions
+export async function getTournamentWinners(
+  options: BaseTransactionOptions<GetTournamentWinnersParams>
 ) {
   return readContract({
     contract: options.contract,
     method: [
-  "0xc8f6aa33",
-  [],
+  "0xa44ef7f3",
+  [
+    {
+      "internalType": "uint256",
+      "name": "tournamentId",
+      "type": "uint256"
+    }
+  ],
+  [
+    {
+      "internalType": "uint256[]",
+      "name": "",
+      "type": "uint256[]"
+    }
+  ]
+],
+    params: [options.tournamentId]
+  });
+};
+
+
+/**
+ * Represents the parameters for the "hashMatches" function.
+ */
+export type HashMatchesParams = {
+  tokenId: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"tokenId","type":"uint256"}>
+teamIds: AbiParameterToPrimitiveType<{"internalType":"uint256[]","name":"teamIds","type":"uint256[]"}>
+winCounts: AbiParameterToPrimitiveType<{"internalType":"uint256[]","name":"winCounts","type":"uint256[]"}>
+};
+
+/**
+ * Calls the "hashMatches" function on the contract.
+ * @param options - The options for the hashMatches function.
+ * @returns The parsed result of the function call.
+ * @example
+ * ```
+ * import { hashMatches } from "TODO";
+ *
+ * const result = await hashMatches({
+ *  tokenId: ...,
+ *  teamIds: ...,
+ *  winCounts: ...,
+ * });
+ *
+ * ```
+ */
+export async function hashMatches(
+  options: BaseTransactionOptions<HashMatchesParams>
+) {
+  return readContract({
+    contract: options.contract,
+    method: [
+  "0xe016717b",
+  [
+    {
+      "internalType": "uint256",
+      "name": "tokenId",
+      "type": "uint256"
+    },
+    {
+      "internalType": "uint256[]",
+      "name": "teamIds",
+      "type": "uint256[]"
+    },
+    {
+      "internalType": "uint256[]",
+      "name": "winCounts",
+      "type": "uint256[]"
+    }
+  ],
   [
     {
       "internalType": "bool",
@@ -469,7 +644,55 @@ export async function isFinalizedIrl(
     }
   ]
 ],
-    params: []
+    params: [options.tokenId, options.teamIds, options.winCounts]
+  });
+};
+
+
+/**
+ * Represents the parameters for the "isRefunded" function.
+ */
+export type IsRefundedParams = {
+  tokenId: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"tokenId","type":"uint256"}>
+};
+
+/**
+ * Calls the "isRefunded" function on the contract.
+ * @param options - The options for the isRefunded function.
+ * @returns The parsed result of the function call.
+ * @example
+ * ```
+ * import { isRefunded } from "TODO";
+ *
+ * const result = await isRefunded({
+ *  tokenId: ...,
+ * });
+ *
+ * ```
+ */
+export async function isRefunded(
+  options: BaseTransactionOptions<IsRefundedParams>
+) {
+  return readContract({
+    contract: options.contract,
+    method: [
+  "0x55866c8d",
+  [
+    {
+      "internalType": "uint256",
+      "name": "tokenId",
+      "type": "uint256"
+    }
+  ],
+  [
+    {
+      "internalType": "bool",
+      "name": "isRefunded",
+      "type": "bool"
+    }
+  ]
+],
+    params: [options.tokenId]
   });
 };
 
@@ -607,6 +830,116 @@ export async function scoreBracket(
 
 
 /**
+ * Represents the parameters for the "tournamentScores" function.
+ */
+export type TournamentScoresParams = {
+  tournamentId: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"tournamentId","type":"uint256"}>
+arg_1: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"","type":"uint256"}>
+};
+
+/**
+ * Calls the "tournamentScores" function on the contract.
+ * @param options - The options for the tournamentScores function.
+ * @returns The parsed result of the function call.
+ * @example
+ * ```
+ * import { tournamentScores } from "TODO";
+ *
+ * const result = await tournamentScores({
+ *  tournamentId: ...,
+ *  arg_1: ...,
+ * });
+ *
+ * ```
+ */
+export async function tournamentScores(
+  options: BaseTransactionOptions<TournamentScoresParams>
+) {
+  return readContract({
+    contract: options.contract,
+    method: [
+  "0x96283419",
+  [
+    {
+      "internalType": "uint256",
+      "name": "tournamentId",
+      "type": "uint256"
+    },
+    {
+      "internalType": "uint256",
+      "name": "",
+      "type": "uint256"
+    }
+  ],
+  [
+    {
+      "internalType": "uint256",
+      "name": "sortedScores",
+      "type": "uint256"
+    }
+  ]
+],
+    params: [options.tournamentId, options.arg_1]
+  });
+};
+
+
+/**
+ * Represents the parameters for the "tournamentWinners" function.
+ */
+export type TournamentWinnersParams = {
+  tournamentId: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"tournamentId","type":"uint256"}>
+arg_1: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"","type":"uint256"}>
+};
+
+/**
+ * Calls the "tournamentWinners" function on the contract.
+ * @param options - The options for the tournamentWinners function.
+ * @returns The parsed result of the function call.
+ * @example
+ * ```
+ * import { tournamentWinners } from "TODO";
+ *
+ * const result = await tournamentWinners({
+ *  tournamentId: ...,
+ *  arg_1: ...,
+ * });
+ *
+ * ```
+ */
+export async function tournamentWinners(
+  options: BaseTransactionOptions<TournamentWinnersParams>
+) {
+  return readContract({
+    contract: options.contract,
+    method: [
+  "0xc32e5c62",
+  [
+    {
+      "internalType": "uint256",
+      "name": "tournamentId",
+      "type": "uint256"
+    },
+    {
+      "internalType": "uint256",
+      "name": "",
+      "type": "uint256"
+    }
+  ],
+  [
+    {
+      "internalType": "uint256",
+      "name": "sortedTokenIdsByScore",
+      "type": "uint256"
+    }
+  ]
+],
+    params: [options.tournamentId, options.arg_1]
+  });
+};
+
+
+/**
  * Represents the parameters for the "tournaments" function.
  */
 export type TournamentsParams = {
@@ -665,6 +998,11 @@ export async function tournaments(
     {
       "internalType": "uint256",
       "name": "totalEntries",
+      "type": "uint256"
+    },
+    {
+      "internalType": "uint256",
+      "name": "developerFeeAccrued",
       "type": "uint256"
     }
   ]
@@ -881,6 +1219,51 @@ export function finalizeTournament(
 };
 
 
+/**
+ * Represents the parameters for the "refundBracket" function.
+ */
+export type RefundBracketParams = {
+  tokenId: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"tokenId","type":"uint256"}>
+};
+
+/**
+ * Calls the "refundBracket" function on the contract.
+ * @param options - The options for the "refundBracket" function.
+ * @returns A prepared transaction object.
+ * @example
+ * ```
+ * import { refundBracket } from "TODO";
+ *
+ * const transaction = refundBracket({
+ *  tokenId: ...,
+ * });
+ *
+ * // Send the transaction
+ * ...
+ *
+ * ```
+ */
+export function refundBracket(
+  options: BaseTransactionOptions<RefundBracketParams>
+) {
+  return prepareContractCall({
+    contract: options.contract,
+    method: [
+  "0x68742b50",
+  [
+    {
+      "internalType": "uint256",
+      "name": "tokenId",
+      "type": "uint256"
+    }
+  ],
+  []
+],
+    params: [options.tokenId]
+  });
+};
+
+
 
 
 /**
@@ -909,6 +1292,155 @@ export function renounceOwnership(
   []
 ],
     params: []
+  });
+};
+
+
+/**
+ * Represents the parameters for the "setEmergencyRefundEnabled" function.
+ */
+export type SetEmergencyRefundEnabledParams = {
+  enabled: AbiParameterToPrimitiveType<{"internalType":"bool","name":"enabled","type":"bool"}>
+};
+
+/**
+ * Calls the "setEmergencyRefundEnabled" function on the contract.
+ * @param options - The options for the "setEmergencyRefundEnabled" function.
+ * @returns A prepared transaction object.
+ * @example
+ * ```
+ * import { setEmergencyRefundEnabled } from "TODO";
+ *
+ * const transaction = setEmergencyRefundEnabled({
+ *  enabled: ...,
+ * });
+ *
+ * // Send the transaction
+ * ...
+ *
+ * ```
+ */
+export function setEmergencyRefundEnabled(
+  options: BaseTransactionOptions<SetEmergencyRefundEnabledParams>
+) {
+  return prepareContractCall({
+    contract: options.contract,
+    method: [
+  "0xbc3b98a5",
+  [
+    {
+      "internalType": "bool",
+      "name": "enabled",
+      "type": "bool"
+    }
+  ],
+  []
+],
+    params: [options.enabled]
+  });
+};
+
+
+/**
+ * Represents the parameters for the "setGameScoreOracle" function.
+ */
+export type SetGameScoreOracleParams = {
+  gameScoreOracle: AbiParameterToPrimitiveType<{"internalType":"address","name":"_gameScoreOracle","type":"address"}>
+};
+
+/**
+ * Calls the "setGameScoreOracle" function on the contract.
+ * @param options - The options for the "setGameScoreOracle" function.
+ * @returns A prepared transaction object.
+ * @example
+ * ```
+ * import { setGameScoreOracle } from "TODO";
+ *
+ * const transaction = setGameScoreOracle({
+ *  gameScoreOracle: ...,
+ * });
+ *
+ * // Send the transaction
+ * ...
+ *
+ * ```
+ */
+export function setGameScoreOracle(
+  options: BaseTransactionOptions<SetGameScoreOracleParams>
+) {
+  return prepareContractCall({
+    contract: options.contract,
+    method: [
+  "0x9bc444bd",
+  [
+    {
+      "internalType": "address",
+      "name": "_gameScoreOracle",
+      "type": "address"
+    }
+  ],
+  []
+],
+    params: [options.gameScoreOracle]
+  });
+};
+
+
+/**
+ * Represents the parameters for the "submitBracketForFinalScoring" function.
+ */
+export type SubmitBracketForFinalScoringParams = {
+  tokenId: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"tokenId","type":"uint256"}>
+teamIds: AbiParameterToPrimitiveType<{"internalType":"uint256[]","name":"teamIds","type":"uint256[]"}>
+winCounts: AbiParameterToPrimitiveType<{"internalType":"uint256[]","name":"winCounts","type":"uint256[]"}>
+};
+
+/**
+ * Calls the "submitBracketForFinalScoring" function on the contract.
+ * @param options - The options for the "submitBracketForFinalScoring" function.
+ * @returns A prepared transaction object.
+ * @example
+ * ```
+ * import { submitBracketForFinalScoring } from "TODO";
+ *
+ * const transaction = submitBracketForFinalScoring({
+ *  tokenId: ...,
+ *  teamIds: ...,
+ *  winCounts: ...,
+ * });
+ *
+ * // Send the transaction
+ * ...
+ *
+ * ```
+ */
+export function submitBracketForFinalScoring(
+  options: BaseTransactionOptions<SubmitBracketForFinalScoringParams>
+) {
+  return prepareContractCall({
+    contract: options.contract,
+    method: [
+  "0xe540a9ab",
+  [
+    {
+      "internalType": "uint256",
+      "name": "tokenId",
+      "type": "uint256"
+    },
+    {
+      "internalType": "uint256[]",
+      "name": "teamIds",
+      "type": "uint256[]"
+    },
+    {
+      "internalType": "uint256[]",
+      "name": "winCounts",
+      "type": "uint256[]"
+    }
+  ],
+  []
+],
+    params: [options.tokenId, options.teamIds, options.winCounts]
   });
 };
 

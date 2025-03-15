@@ -32,10 +32,11 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     error InvalidWinCounts();
     error InvalidTeamId();
     error TeamIdsWinCountsLengthMismatch();
-    error MismatchedHash();
+    error InvalidHash();
     error IncompatibleEmergencyRefundState();
     error BracketAlreadyRefunded();
     error RefundFailed();
+    error BracketAlreadyScored();
 
     // Structs
     struct Tournament {
@@ -58,7 +59,8 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     // State variables
     mapping(uint256 => Tournament) public tournaments;
     uint256 public nextTournamentId;
-    bool public isFinalizedIrl;
+    mapping(uint256 tournamentId => uint256[] sortedTokenIdsByScore) public tournamentWinners;
+    mapping(uint256 tournamentId => uint256[] sortedScores) public tournamentScores;
 
     // In the event of a catastrophic event, we can enable emergency refunds for all players
     bool public emergencyRefundEnabled;
@@ -176,20 +178,15 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         return tokenId;
     }
 
-    function checkIfTournamentEndedIrl() external view returns (bool) {
-        // Calls the gamescore oracle to check if the tournament has ended
-        return GameScoreOracle(gameScoreOracle).isTournamentOver();
-    }
-
     function finalizeTournament(
         uint256 tournamentId,
         address[] calldata winners,
         uint256[] calldata prizes
-    ) external onlyGameScoreOracle {
+    ) external {
         if (emergencyRefundEnabled) revert IncompatibleEmergencyRefundState();
+        if (!GameScoreOracle(gameScoreOracle).isTournamentOver()) revert TournamentNotEnded();
         Tournament storage tournament = tournaments[tournamentId];
         
-        if (!isFinalizedIrl) revert TournamentNotEnded();
         if (winners.length > MAX_WINNERS) revert TooManyWinners();
         if (winners.length != prizes.length) revert WinnersPrizesLengthMismatch();
 
@@ -259,7 +256,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         uint256 tokenId,
         uint256[] calldata teamIds,
         uint256[] calldata winCounts
-    ) external view returns (uint256) {
+    ) public view returns (uint256) {
         // Validate array lengths match
         if (teamIds.length != winCounts.length) revert TeamIdsWinCountsLengthMismatch();
 
@@ -277,11 +274,8 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         // Ensure exactly one champion (if we have any teams with wins)
         if (teamIds.length > 0 && championCount != 1) revert InvalidWinCounts();
 
-        bytes32 storedHash = BracketNFT(BRACKET_NFT).bracketHashes(tokenId);
-        // Hash the arrays the same way
-        bytes32 hash = keccak256(abi.encode(teamIds, winCounts));
-        // Compare with stored hash
-        if (hash != storedHash) return 0;
+        // Invalid hashes get a score of 0
+        if (!hashMatches(tokenId, teamIds, winCounts)) return 0;
 
         // Calculate score based on standard scoring formula
         uint256 score = 0;
@@ -301,6 +295,56 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         }
 
         return score;
+    }
+
+    function submitBracketForFinalScoring(uint256 tokenId, uint256[] calldata teamIds, uint256[] calldata winCounts) external {
+        // Safety checks
+        if (emergencyRefundEnabled) revert IncompatibleEmergencyRefundState();
+        if (!GameScoreOracle(gameScoreOracle).isTournamentOver()) revert TournamentNotEnded();
+        if (BracketNFT(BRACKET_NFT).isScoreSubmitted(tokenId)) revert BracketAlreadyScored();
+        if (!hashMatches(tokenId, teamIds, winCounts)) revert InvalidHash();
+        
+        // Set the bracket as scored
+        BracketNFT(BRACKET_NFT).setIsScoreSubmitted(tokenId);
+
+        // Score the bracket
+        uint256 score = scoreBracket(tokenId, teamIds, winCounts);
+
+        // Get tournament ID from the bracket
+        uint256 tournamentId = BracketNFT(BRACKET_NFT).bracketTournaments(tokenId);
+
+        // Get current arrays
+        uint256[] storage winners = tournamentWinners[tournamentId];
+        uint256[] storage scores = tournamentScores[tournamentId];
+
+        // Find insertion point to maintain descending order
+        uint256 insertAt = scores.length;
+        for (uint256 i = 0; i < scores.length; i++) {
+            if (score > scores[i]) {
+                insertAt = i;
+                break;
+            }
+        }
+
+        // Extend both arrays by one
+        winners.push();
+        scores.push();
+
+        // Shift elements in both arrays
+        for (uint256 i = scores.length - 1; i > insertAt; i--) {
+            scores[i] = scores[i-1];
+            winners[i] = winners[i-1];
+        }
+
+        // Insert new score and tokenId at the same position
+        scores[insertAt] = score;
+        winners[insertAt] = tokenId;
+    }
+
+    function hashMatches(uint256 tokenId, uint256[] calldata teamIds, uint256[] calldata winCounts) public view returns (bool) {
+        bytes32 storedHash = BracketNFT(BRACKET_NFT).bracketHashes(tokenId);
+        bytes32 hash = keccak256(abi.encode(teamIds, winCounts));
+        return hash == storedHash;
     }
 
     function refundBracket(uint256 tokenId) external nonReentrant {
@@ -326,6 +370,16 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         
         tournament.prizePool -= prizeAmount;
         tournament.developerFeeAccrued -= devFee;
+    }
+
+    // View function to get tournament winners array
+    function getTournamentWinners(uint256 tournamentId) external view returns (uint256[] memory) {
+        uint256[] storage winners = tournamentWinners[tournamentId];
+        uint256[] memory result = new uint256[](winners.length);
+        for (uint256 i = 0; i < winners.length; i++) {
+            result[i] = winners[i];
+        }
+        return result;
     }
 
     function setEmergencyRefundEnabled(bool enabled) external onlyOwner {
