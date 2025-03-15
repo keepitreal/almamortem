@@ -12,6 +12,7 @@
   "error InvalidTeamId()",
   "error InvalidTreasuryAddress()",
   "error InvalidWinCounts()",
+  "error InvalidWinDistribution()",
   "error OnlyGameScoreOracle()",
   "error OwnableInvalidOwner(address)",
   "error OwnableUnauthorizedAccount(address)",
@@ -58,5 +59,6 @@
   "function tournamentScores(uint256,uint256) view returns (uint256)",
   "function tournamentWinners(uint256,uint256) view returns (uint256)",
   "function tournaments(uint256) view returns (uint256, address, uint256, uint256, uint256, uint256)",
-  "function transferOwnership(address)"
+  "function transferOwnership(address)",
+  "function validateBracketWinDistribution(uint256[],uint256[]) pure"
 ]
