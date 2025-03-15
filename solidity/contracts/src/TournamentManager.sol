@@ -382,6 +382,15 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         return result;
     }
 
+    function getTournamentScores(uint256 tournamentId) external view returns (uint256[] memory) {
+        uint256[] storage scores = tournamentScores[tournamentId];
+        uint256[] memory result = new uint256[](scores.length);
+        for (uint256 i = 0; i < scores.length; i++) {
+            result[i] = scores[i];
+        }
+        return result;
+    }
+
     function setEmergencyRefundEnabled(bool enabled) external onlyOwner {
         emergencyRefundEnabled = enabled;
         emit EmergencyRefundEnabledStateChange(enabled);

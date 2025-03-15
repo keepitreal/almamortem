@@ -8,9 +8,9 @@ const YELLOW = "\x1b[33m";
 const RED = "\x1b[31m";
 
 // Hardcoded contract addresses - REPLACE THESE WITH YOUR ACTUAL CONTRACT ADDRESSES
-const TOURNAMENT_MANAGER_ADDRESS = "0x0972D7116339c5D3551e6E7433591e13075E013e"; // Replace with actual address
-const BRACKET_NFT_ADDRESS = "0xf863f20639ee68aF043469501B2677ac840AF298"; // Replace with actual address
-const GAME_SCORE_ORACLE_ADDRESS = "0x0C16aD5B5FF37E86F9E0421ce51f344575b206f8"; // Replace with actual address
+const TOURNAMENT_MANAGER_ADDRESS = "0xa429aC47ae6dbE378036d03060353d88127c4390"; // Replace with actual address
+const BRACKET_NFT_ADDRESS = "0xcCEA17F41023D3f6b8Fa503f336b7A85296dD40A"; // Replace with actual address
+const GAME_SCORE_ORACLE_ADDRESS = "0xB1Cdb2F37BB09F1f3C88c0994AF28A5c6dAf4A68"; // Replace with actual address
 
 // HARDCODED TOURNAMENT ID - CHANGE THIS VALUE TO SCORE A DIFFERENT TOURNAMENT
 const TOURNAMENT_ID = "0";
@@ -207,9 +207,20 @@ async function main() {
         console.log(`${GREEN}📜 Transaction confirmed in block ${receipt?.blockNumber}${RESET}`);
         successCount++;
         
-        // Get updated winners
+        // Get updated winners and scores
         const winners = await tournamentManager.getTournamentWinners(TOURNAMENT_ID);
         console.log(`${GREEN}🏆 Current tournament winners: ${winners.join(", ")}${RESET}`);
+        
+        // Get and display tournament scores
+        try {
+          const scores = await tournamentManager.getTournamentScores(TOURNAMENT_ID);
+          console.log(`${GREEN}📊 Current top scores:${RESET}`);
+          for (let i = 0; i < scores.length && i < 5; i++) {
+            console.log(`${GREEN}   #${i+1}: ${scores[i].toString()}${RESET}`);
+          }
+        } catch (err) {
+          console.error(`${YELLOW}⚠️ Could not fetch tournament scores:${RESET}`, err);
+        }
       } catch (err) {
         console.error(`${RED}❌ Error submitting bracket #${tokenId} for scoring:${RESET}`, err);
         failedCount++;
@@ -223,10 +234,21 @@ async function main() {
     }
   }
   
-  // Get final winners
+  // Get final winners and scores
   try {
     const finalWinners = await tournamentManager.getTournamentWinners(TOURNAMENT_ID);
     console.log(`${GREEN}\n🏆 FINAL TOURNAMENT WINNERS: ${finalWinners.join(", ")}${RESET}`);
+    
+    // Get and display final tournament scores
+    try {
+      const finalScores = await tournamentManager.getTournamentScores(TOURNAMENT_ID);
+      console.log(`${GREEN}📊 FINAL TOURNAMENT SCORES:${RESET}`);
+      for (let i = 0; i < finalScores.length && i < 10; i++) {
+        console.log(`${GREEN}   #${i+1}: ${finalScores[i].toString()}${RESET}`);
+      }
+    } catch (err) {
+      console.error(`${YELLOW}⚠️ Could not fetch final tournament scores:${RESET}`, err);
+    }
   } catch (err) {
     console.error(`${RED}\n❌ Error getting final tournament winners:${RESET}`, err);
   }
