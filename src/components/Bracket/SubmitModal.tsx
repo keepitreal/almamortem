@@ -3,7 +3,7 @@ import {
   TransactionButton,
 } from "@coinbase/onchainkit/transaction";
 import { type LifecycleStatus } from "@coinbase/onchainkit/transaction";
-import { type FC, useCallback, useState } from "react";
+import { type FC, useCallback, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { upload } from "thirdweb/storage";
 import { useAccount } from "wagmi";
@@ -24,6 +24,7 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
   const { address, isConnected } = useAccount();
   const [isUploading, setIsUploading] = useState(false);
   const [ipfsUri, setIpfsUri] = useState<string | null>(null);
+  const [toastShown, setToastShown] = useState(false);
 
   // calls will not generate without an ipfsUri
   const { calls } = useEnterTournamentCalls({
@@ -35,7 +36,17 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
   const teams = useTeams();
 
   const onStatusChange = (status: LifecycleStatus) => {
-    // console.log(status);
+    console.log({status});
+    // if (status.statusName === "success") {
+    //   if (!toastShown) {
+    //     toast.success("Bracket submitted successfully");
+    //     setToastShown(true);
+    //   }
+    //   // close the modal
+    //   document.getElementById(modalId)?.click();
+    //   // reset the toastShown state
+    //   setToastShown(false);
+    // }
   };
 
   // handle modal open will upload NFT data to IPFS.
