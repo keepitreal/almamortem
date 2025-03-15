@@ -1,13 +1,11 @@
 import { type FC } from "react";
 import { useState } from "react";
-import { useActiveAccount } from "thirdweb/react";
 
 import { LoadingOverlay } from "~/components/LoadingOverlay";
 import { Overview } from "~/components/Overview";
 import { ROUND_NAMES } from "~/constants";
 import { useBracket } from "~/context/BracketContext";
 import type { Team } from "~/types/bracket";
-import { getBracketHash } from "~/utils/bracketHash";
 
 import { Controls } from "./Controls";
 import { FinalRounds } from "./FinalRounds";
@@ -43,7 +41,6 @@ interface DesktopProps {
 export const Desktop: FC<DesktopProps> = ({ tournamentId }) => {
   const { userPicks, setWinner, regionPairs, isLoading } = useBracket();
   console.log({ userPicks });
-  const account = useActiveAccount();
   const [isSaving, setIsSaving] = useState(false);
 
   const handleTeamSelect = (matchupId: number, team: Team) => {
