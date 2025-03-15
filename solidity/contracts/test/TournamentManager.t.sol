@@ -119,28 +119,25 @@ contract TournamentManagerTest is Test {
         // Test TournamentNotEnded
         address[] memory winners = new address[](1);
         uint256[] memory prizes = new uint256[](1);
-        vm.prank(address(oracle));
         vm.expectRevert(TournamentManager.TournamentNotEnded.selector);
         manager.finalizeTournament(tournamentId, winners, prizes);
 
-        // Set tournament as finalized for remaining tests
-        vm.store(
-            address(manager),
-            bytes32(uint256(6)), // Updated slot of isFinalizedIrl (was 5)
-            bytes32(uint256(1))  // true
+        // Mock tournament as over for remaining tests
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
         );
 
         // Test TooManyWinners
         address[] memory tooManyWinners = new address[](4);
         uint256[] memory tooManyPrizes = new uint256[](4);
-        vm.prank(address(oracle));
         vm.expectRevert(TournamentManager.TooManyWinners.selector);
         manager.finalizeTournament(tournamentId, tooManyWinners, tooManyPrizes);
 
         // Test WinnersPrizesLengthMismatch
         address[] memory mismatchWinners = new address[](2);
         uint256[] memory mismatchPrizes = new uint256[](1);
-        vm.prank(address(oracle));
         vm.expectRevert(TournamentManager.WinnersPrizesLengthMismatch.selector);
         manager.finalizeTournament(tournamentId, mismatchWinners, mismatchPrizes);
 
@@ -161,17 +158,8 @@ contract TournamentManagerTest is Test {
         validWinners[0] = user1;
         tooHighPrizes[0] = 2 ether; // More than pool
         
-        vm.prank(address(oracle));
         vm.expectRevert(TournamentManager.PrizesExceedPool.selector);
         manager.finalizeTournament(tournamentId, validWinners, tooHighPrizes);
-    }
-
-    function testOnlyGameScoreOracleModifier() public {
-        address[] memory winners = new address[](1);
-        uint256[] memory prizes = new uint256[](1);
-        
-        vm.expectRevert(TournamentManager.OnlyGameScoreOracle.selector);
-        manager.finalizeTournament(0, winners, prizes);
     }
 
     function testScoreBracketSuccess() public {
@@ -525,11 +513,11 @@ contract TournamentManagerTest is Test {
         // Check treasury balance before finalization
         uint256 treasuryBalanceBefore = treasury.balance;
         
-        // Set tournament as finalized
-        vm.store(
-            address(manager),
-            bytes32(uint256(6)), // storage slot of isFinalizedIrl
-            bytes32(uint256(1))  // true
+        // Mock tournament as over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
         );
         
         // Finalize tournament
@@ -538,7 +526,6 @@ contract TournamentManagerTest is Test {
         winners[0] = user1;
         prizes[0] = 0.9 ether; // 90% of pool
         
-        vm.prank(address(oracle));
         manager.finalizeTournament(tournamentId, winners, prizes);
         
         // Verify developer fee was paid to treasury
@@ -578,11 +565,11 @@ contract TournamentManagerTest is Test {
         // Check treasury token balance before finalization
         uint256 treasuryBalanceBefore = token.balanceOf(treasury);
         
-        // Set tournament as finalized
-        vm.store(
-            address(manager),
-            bytes32(uint256(6)), // storage slot of isFinalizedIrl
-            bytes32(uint256(1))  // true
+        // Mock tournament as over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
         );
         
         // Finalize tournament
@@ -591,7 +578,6 @@ contract TournamentManagerTest is Test {
         winners[0] = user1;
         prizes[0] = 0.9 ether; // 90% of pool
         
-        vm.prank(address(oracle));
         manager.finalizeTournament(tournamentId, winners, prizes);
         
         // Verify developer fee was paid to treasury
@@ -631,5 +617,96 @@ contract TournamentManagerTest is Test {
         vm.prank(address(this));
         vm.expectRevert(TournamentManager.InvalidGameScoreOracleAddress.selector);
         manager.setGameScoreOracle(address(0));
+    }
+
+    function testSubmitBracketForFinalScoring() public {
+        // Create tournament and enter it
+        uint256 tournamentId = createTournamentHelper(0.1 ether, address(0));
+        uint256 tokenId = enterTournamentHelper(user1, tournamentId, bytes32(0), 0, "uri");
+
+        // Set tournament as not over yet
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(false)
+        );
+
+        // Try to submit when tournament is not over
+        vm.expectRevert(TournamentManager.TournamentNotEnded.selector);
+        manager.submitBracketForFinalScoring(tokenId);
+
+        // Set tournament as over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+
+        // Submit bracket for scoring
+        manager.submitBracketForFinalScoring(tokenId);
+
+        // Verify bracket is marked as scored
+        assertTrue(nft.isScoreSubmitted(tokenId));
+
+        // Try to submit again
+        vm.expectRevert(TournamentManager.BracketAlreadyScored.selector);
+        manager.submitBracketForFinalScoring(tokenId);
+    }
+
+    function testSubmitBracketForFinalScoringEmergencyRefund() public {
+        // Create tournament and enter it
+        uint256 tournamentId = createTournamentHelper(0.1 ether, address(0));
+        uint256 tokenId = enterTournamentHelper(user1, tournamentId, bytes32(0), 0, "uri");
+
+        // Enable emergency refund
+        vm.prank(manager.owner());
+        manager.setEmergencyRefundEnabled(true);
+
+        // Set tournament as over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+
+        // Try to submit when emergency refund is enabled
+        vm.expectRevert(TournamentManager.IncompatibleEmergencyRefundState.selector);
+        manager.submitBracketForFinalScoring(tokenId);
+    }
+
+    // Helper functions
+    function createTournamentHelper(uint256 entryFee, address paymentToken) internal returns (uint256) {
+        uint256 startTime = block.timestamp + 1 days;
+        return manager.createTournament(entryFee, paymentToken, startTime);
+    }
+
+    function enterTournamentHelper(
+        address participant,
+        uint256 tournamentId,
+        bytes32 bracketHash,
+        uint256 tiebreaker,
+        string memory bracketURI
+    ) internal returns (uint256) {
+        (uint256 entryFee, address paymentToken,,,,, ) = manager.getTournament(tournamentId);
+        if (paymentToken == address(0)) {
+            vm.deal(participant, entryFee);
+            vm.prank(participant);
+            return manager.enterTournament{value: entryFee}(
+                participant,
+                tournamentId,
+                bracketHash,
+                tiebreaker,
+                bracketURI
+            );
+        } else {
+            vm.prank(participant);
+            return manager.enterTournament(
+                participant,
+                tournamentId,
+                bracketHash,
+                tiebreaker,
+                bracketURI
+            );
+        }
     }
 } 

@@ -36,6 +36,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     error IncompatibleEmergencyRefundState();
     error BracketAlreadyRefunded();
     error RefundFailed();
+    error BracketAlreadyScored();
 
     // Structs
     struct Tournament {
@@ -58,7 +59,6 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     // State variables
     mapping(uint256 => Tournament) public tournaments;
     uint256 public nextTournamentId;
-    bool public isFinalizedIrl;
 
     // In the event of a catastrophic event, we can enable emergency refunds for all players
     bool public emergencyRefundEnabled;
@@ -176,20 +176,15 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         return tokenId;
     }
 
-    function checkIfTournamentEndedIrl() external view returns (bool) {
-        // Calls the gamescore oracle to check if the tournament has ended
-        return GameScoreOracle(gameScoreOracle).isTournamentOver();
-    }
-
     function finalizeTournament(
         uint256 tournamentId,
         address[] calldata winners,
         uint256[] calldata prizes
-    ) external onlyGameScoreOracle {
+    ) external {
         if (emergencyRefundEnabled) revert IncompatibleEmergencyRefundState();
+        if (!GameScoreOracle(gameScoreOracle).isTournamentOver()) revert TournamentNotEnded();
         Tournament storage tournament = tournaments[tournamentId];
         
-        if (!isFinalizedIrl) revert TournamentNotEnded();
         if (winners.length > MAX_WINNERS) revert TooManyWinners();
         if (winners.length != prizes.length) revert WinnersPrizesLengthMismatch();
 
@@ -301,6 +296,13 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         }
 
         return score;
+    }
+
+    function submitBracketForFinalScoring(uint256 tokenId) external {
+        if (emergencyRefundEnabled) revert IncompatibleEmergencyRefundState();
+        if (!GameScoreOracle(gameScoreOracle).isTournamentOver()) revert TournamentNotEnded();
+        if (BracketNFT(BRACKET_NFT).isScoreSubmitted(tokenId)) revert BracketAlreadyScored();
+        BracketNFT(BRACKET_NFT).setIsScoreSubmitted(tokenId);
     }
 
     function refundBracket(uint256 tokenId) external nonReentrant {

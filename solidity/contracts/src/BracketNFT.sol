@@ -14,17 +14,21 @@ contract BracketNFT is ERC721Enumerable {
     error NonexistentToken();
     error InvalidIndex();
     error ManagerAlreadySet();
+    error BracketAlreadyScored();
+
     // State variables
     address public tournamentManager;
     mapping(uint256 => bytes32) public bracketHashes;    // tokenId => bracketHash
     mapping(uint256 => uint256) public bracketTournaments;    // tokenId => tournamentId
     mapping(uint256 => uint256) public bracketTiebreakers;    // tokenId => tiebreaker
     mapping(uint256 => string) private _tokenURIs;            // tokenId => IPFS URI
+    mapping(uint256 => bool) public isScoreSubmitted;    // tokenId => isScored
     
     uint256 private _nextTokenId;
 
     // Events
     event BracketCreated(uint256 indexed tokenId, uint256 indexed tournamentId, bytes32 merkleRoot, uint256 tiebreaker);
+    event BracketScored(uint256 indexed tokenId);
     
     constructor() ERC721Enumerable() ERC721("Tournament Bracket", "BRACKET") {}
     
@@ -70,5 +74,12 @@ contract BracketNFT is ERC721Enumerable {
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         if (tokenId >= _nextTokenId) revert NonexistentToken();
         return _tokenURIs[tokenId];
+    }
+
+    function setIsScoreSubmitted(uint256 tokenId) external onlyManager {
+        if (tokenId >= _nextTokenId) revert NonexistentToken();
+        if (isScoreSubmitted[tokenId]) revert BracketAlreadyScored();
+        isScoreSubmitted[tokenId] = true;
+        emit BracketScored(tokenId);
     }
 } 

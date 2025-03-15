@@ -96,4 +96,83 @@ contract BracketNFTTest is Test {
         string memory uri = nft.tokenURI(tokenId);
         assertEq(uri, "uri");
     }
+
+    function testSetIsScoreSubmitted() public {
+        // Set up manager and mint a token
+        nft.setTournamentManager(manager);
+        vm.prank(manager);
+        uint256 tokenId = nft.mintBracket(
+            user1,
+            1,
+            bytes32(0),
+            0,
+            "uri"
+        );
+
+        // Verify initial state
+        assertEq(nft.isScoreSubmitted(tokenId), false);
+
+        // Set score submitted and verify state change
+        vm.prank(manager);
+        vm.expectEmit(true, false, false, true);
+        emit BracketNFT.BracketScored(tokenId);
+        nft.setIsScoreSubmitted(tokenId);
+        
+        assertEq(nft.isScoreSubmitted(tokenId), true);
+    }
+
+    function testSetIsScoreSubmittedNonexistentToken() public {
+        // Set up manager
+        nft.setTournamentManager(manager);
+
+        // Try to set score submitted for non-existent token
+        vm.prank(manager);
+        vm.expectRevert(BracketNFT.NonexistentToken.selector);
+        nft.setIsScoreSubmitted(0);
+    }
+
+    function testSetIsScoreSubmittedAlreadyScored() public {
+        // Set up manager and mint a token
+        nft.setTournamentManager(manager);
+        vm.prank(manager);
+        uint256 tokenId = nft.mintBracket(
+            user1,
+            1,
+            bytes32(0),
+            0,
+            "uri"
+        );
+
+        // Set score submitted first time
+        vm.prank(manager);
+        nft.setIsScoreSubmitted(tokenId);
+
+        // Try to set score submitted again
+        vm.prank(manager);
+        vm.expectRevert(BracketNFT.BracketAlreadyScored.selector);
+        nft.setIsScoreSubmitted(tokenId);
+    }
+
+    function testSetIsScoreSubmittedOnlyManager() public {
+        // Set up manager and mint a token
+        nft.setTournamentManager(manager);
+        vm.prank(manager);
+        uint256 tokenId = nft.mintBracket(
+            user1,
+            1,
+            bytes32(0),
+            0,
+            "uri"
+        );
+
+        // Try to set score submitted from non-manager address
+        vm.prank(user1);
+        vm.expectRevert(BracketNFT.OnlyTournamentManager.selector);
+        nft.setIsScoreSubmitted(tokenId);
+
+        // Verify it works when called by manager
+        vm.prank(manager);
+        nft.setIsScoreSubmitted(tokenId);
+        assertEq(nft.isScoreSubmitted(tokenId), true);
+    }
 } 
