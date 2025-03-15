@@ -266,7 +266,7 @@ export const matchupRouter = createTRPCRouter({
         previousMatchupIds: [], // We'll fill this in after creating the map
         topTeam: homeTeam
           ? {
-              id: generateTeamId(region, homeTeamCompetitor?.curatedRank.current ?? 16),
+              id: generateTeamId(region, homeTeamCompetitor?.curatedRank.current ?? 16).toString(),
               name: homeTeam.name,
               mascot: homeTeam.mascot,
               seed: homeTeamCompetitor?.curatedRank.current ?? 16,
@@ -279,7 +279,7 @@ export const matchupRouter = createTRPCRouter({
           : null,
         bottomTeam: awayTeam
           ? {
-              id: generateTeamId(region, awayTeamCompetitor?.curatedRank.current ?? 16),
+              id: generateTeamId(region, awayTeamCompetitor?.curatedRank.current ?? 16).toString(),
               name: awayTeam.name,
               mascot: awayTeam.mascot,
               seed: awayTeamCompetitor?.curatedRank.current ?? 16,
