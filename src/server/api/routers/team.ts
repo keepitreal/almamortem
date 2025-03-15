@@ -3,6 +3,7 @@ import { z } from "zod";
 import { redis } from "~/lib/redis";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import type { Team } from "~/types/bracket";
+import { getMatchups } from "./matchup";
 interface ESPNTeamLogo {
   href: string;
   alt: string;
@@ -101,7 +102,15 @@ export async function getAllTeams(): Promise<Team[]> {
 
 export const teamRouter = createTRPCRouter({
   getAll: publicProcedure.query(async (): Promise<Team[]> => {
-    return getAllTeams();
+    const { espnTeamIdToDerivedTeamId } = await getMatchups();
+    const teams = await getAllTeams();
+    console.log({ teamsLength: teams.length })
+    
+    return teams.map((team) => ({
+      ...team,
+      // prevents teams that are not in the tournament from sharing an id with teams that are in the tournament
+      id: espnTeamIdToDerivedTeamId[team.id] ?? `${team.id}:${team.name}`,
+    }));
   }),
 
   // Add additional procedures here as needed, for example:
