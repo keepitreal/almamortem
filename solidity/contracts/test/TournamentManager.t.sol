@@ -31,10 +31,10 @@ contract TournamentManagerTest is Test, IERC721Receiver {
     address public constant MOCK_ROUTER = address(1); // Mock Chainlink Functions Router
     
     function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
+        address,
+        address,
+        uint256,
+        bytes calldata
     ) external pure returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }
@@ -121,55 +121,6 @@ contract TournamentManagerTest is Test, IERC721Receiver {
             0,
             "uri"
         );
-    }
-
-    function testFinalizeTournamentErrors() public {
-        uint256 tournamentId = manager.createTournament(1 ether, address(0), block.timestamp + 1 days);
-        
-        // Test TournamentNotEnded
-        address[] memory winners = new address[](1);
-        uint256[] memory prizes = new uint256[](1);
-        vm.expectRevert(TournamentManager.TournamentNotEnded.selector);
-        manager.finalizeTournament(tournamentId, winners, prizes);
-
-        // Mock tournament as over for remaining tests
-        vm.mockCall(
-            address(oracle),
-            abi.encodeWithSignature("isTournamentOver()"),
-            abi.encode(true)
-        );
-
-        // Test TooManyWinners
-        address[] memory tooManyWinners = new address[](4);
-        uint256[] memory tooManyPrizes = new uint256[](4);
-        vm.expectRevert(TournamentManager.TooManyWinners.selector);
-        manager.finalizeTournament(tournamentId, tooManyWinners, tooManyPrizes);
-
-        // Test WinnersPrizesLengthMismatch
-        address[] memory mismatchWinners = new address[](2);
-        uint256[] memory mismatchPrizes = new uint256[](1);
-        vm.expectRevert(TournamentManager.WinnersPrizesLengthMismatch.selector);
-        manager.finalizeTournament(tournamentId, mismatchWinners, mismatchPrizes);
-
-        // Test PrizesExceedPool
-        // First enter tournament to create prize pool
-        vm.deal(address(this), 1 ether);
-        manager.enterTournament{value: 1 ether}(
-            user1,
-            tournamentId,
-            bytes32(0),
-            0,
-            "uri"
-        );
-        
-        // Try to distribute more than pool
-        address[] memory validWinners = new address[](1);
-        uint256[] memory tooHighPrizes = new uint256[](1);
-        validWinners[0] = user1;
-        tooHighPrizes[0] = 2 ether; // More than pool
-        
-        vm.expectRevert(TournamentManager.PrizesExceedPool.selector);
-        manager.finalizeTournament(tournamentId, validWinners, tooHighPrizes);
     }
 
     function testScoreBracketSuccess() public {
@@ -390,11 +341,7 @@ contract TournamentManagerTest is Test, IERC721Receiver {
         assertEq(score, 68, "Score should award points only for actual wins up to predicted round");
     }
 
-    function testValidateBracketWinDistribution() public {
-        // Create a tournament
-        uint256 startTime = block.timestamp + 1 days;
-        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
-        
+    function testValidateBracketWinDistribution() public {   
         // Create a complete bracket with 64 teams
         uint256[] memory teamIds = new uint256[](64);
         uint256[] memory winCounts = new uint256[](64);
@@ -443,19 +390,9 @@ contract TournamentManagerTest is Test, IERC721Receiver {
         for (uint256 i = 32; i < 64; i++) {
             winCounts[i] = 0;
         }
-        
-        // Generate bracket hash
-        bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
-        
+                
         // Enter tournament with computed hash
         vm.deal(address(this), 1 ether);
-        uint256 tokenId = manager.enterTournament{value: 1 ether}(
-            user1,
-            tournamentId,
-            bracketHash,
-            0,
-            "uri"
-        );
         
         // This should not revert
         manager.validateBracketWinDistribution(teamIds, winCounts);
@@ -709,7 +646,7 @@ contract TournamentManagerTest is Test, IERC721Receiver {
         
         vm.prank(address(oracle));
         vm.expectRevert(TournamentManager.IncompatibleEmergencyRefundState.selector);
-        manager.finalizeTournament(tournamentId, winners, prizes);
+        manager.distributePrizes(tournamentId);
     }
     
     function testDeveloperFeePayment() public {
@@ -717,19 +654,42 @@ contract TournamentManagerTest is Test, IERC721Receiver {
         uint256 startTime = block.timestamp + 1 days;
         uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
         
-        // Enter tournament with ETH
-        vm.deal(address(this), 1 ether);
-        manager.enterTournament{value: 1 ether}(
-            user1,
-            tournamentId,
-            bytes32(0),
-            0,
-            "uri"
-        );
+        // Enter tournament with 10 participants (MIN_PARTICIPANTS)
+        for (uint256 i = 0; i < 10; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            vm.deal(participant, 1 ether);
+            
+            vm.startPrank(participant);
+            
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            manager.enterTournament{value: 1 ether}(
+                participant,
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+            
+            vm.stopPrank();
+        }
         
         // Check that developer fee is accrued but not paid yet
-        (,,,,,uint256 devFeeAccrued,) = manager.getTournament(tournamentId);
-        assertEq(devFeeAccrued, 0.1 ether, "Developer fee should be accrued");
+        (,,,,,uint256 devFeeAccrued,,) = manager.getTournament(tournamentId);
+        assertEq(devFeeAccrued, 1 ether, "Developer fee should be accrued"); // 10% of 10 ether
         
         // Check treasury balance before finalization
         uint256 treasuryBalanceBefore = treasury.balance;
@@ -741,19 +701,88 @@ contract TournamentManagerTest is Test, IERC721Receiver {
             abi.encode(true)
         );
         
-        // Finalize tournament
-        address[] memory winners = new address[](1);
-        uint256[] memory prizes = new uint256[](1);
-        winners[0] = user1;
-        prizes[0] = 0.9 ether; // 90% of pool
+        // Submit scores for all participants to ensure they're ranked
+        for (uint256 i = 0; i < 10; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            uint256 tokenId = i + 1; // Token IDs start at 1
+            
+            // Mock the bracket tournament mapping
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("bracketTournaments(uint256)", tokenId),
+                abi.encode(tournamentId)
+            );
+            
+            // Mock isScoreSubmitted to return false
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("isScoreSubmitted(uint256)", tokenId),
+                abi.encode(false)
+            );
+            
+            // Mock setIsScoreSubmitted to do nothing
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("setIsScoreSubmitted(uint256)", tokenId),
+                abi.encode()
+            );
+            
+            // Mock bracketHashes to return a valid hash
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("bracketHashes(uint256)", tokenId),
+                abi.encode(bracketHash)
+            );
+            
+            // Mock getTeamWins to return valid wins
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", uint256(1)),
+                abi.encode(uint8(6))
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", uint256(2)),
+                abi.encode(uint8(5))
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", uint256(3)),
+                abi.encode(uint8(4))
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", uint256(4)),
+                abi.encode(uint8(3))
+            );
+            
+            // Submit the bracket for scoring
+            manager.submitBracketForFinalScoring(tokenId, teamIds, winCounts);
+        }
         
-        manager.finalizeTournament(tournamentId, winners, prizes);
+        // Distribute prizes
+        manager.distributePrizes(tournamentId);
         
         // Verify developer fee was paid to treasury
-        assertEq(treasury.balance, treasuryBalanceBefore + 0.1 ether, "Developer fee should be paid to treasury");
+        assertEq(treasury.balance, treasuryBalanceBefore + 1 ether, "Developer fee should be paid to treasury");
         
         // Verify developer fee is reset
-        (,,,,,devFeeAccrued,) = manager.getTournament(tournamentId);
+        (,,,,,devFeeAccrued,,) = manager.getTournament(tournamentId);
         assertEq(devFeeAccrued, 0, "Developer fee should be reset after payment");
     }
     
@@ -762,26 +791,47 @@ contract TournamentManagerTest is Test, IERC721Receiver {
         uint256 startTime = block.timestamp + 1 days;
         uint256 tournamentId = manager.createTournament(1 ether, address(token), startTime);
         
-        // Mint tokens to user
-        token.mint(user1, 1 ether);
-        
-        // Approve tokens for tournament manager
-        vm.prank(user1);
-        token.approve(address(manager), 1 ether);
-        
-        // Enter tournament with ERC20
-        vm.prank(user1);
-        manager.enterTournament(
-            user1,
-            tournamentId,
-            bytes32(0),
-            0,
-            "uri"
-        );
+        // Enter tournament with 10 participants (MIN_PARTICIPANTS)
+        for (uint256 i = 0; i < 10; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            
+            // Mint tokens to participant
+            token.mint(participant, 1 ether);
+            
+            vm.startPrank(participant);
+            
+            // Approve tokens for tournament manager
+            token.approve(address(manager), 1 ether);
+            
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            manager.enterTournament(
+                participant,
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+            
+            vm.stopPrank();
+        }
         
         // Check that developer fee is accrued but not paid yet
-        (,,,,,uint256 devFeeAccrued,) = manager.getTournament(tournamentId);
-        assertEq(devFeeAccrued, 0.1 ether, "Developer fee should be accrued");
+        (,,,,,uint256 devFeeAccrued,,) = manager.getTournament(tournamentId);
+        assertEq(devFeeAccrued, 1 ether, "Developer fee should be accrued"); // 10% of 10 ether
         
         // Check treasury token balance before finalization
         uint256 treasuryBalanceBefore = token.balanceOf(treasury);
@@ -793,19 +843,95 @@ contract TournamentManagerTest is Test, IERC721Receiver {
             abi.encode(true)
         );
         
-        // Finalize tournament
-        address[] memory winners = new address[](1);
-        uint256[] memory prizes = new uint256[](1);
-        winners[0] = user1;
-        prizes[0] = 0.9 ether; // 90% of pool
+        // Submit scores for all participants to ensure they're ranked
+        for (uint256 i = 0; i < 10; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            uint256 tokenId = i + 11; // Token IDs start at 11 (after the previous test)
+            
+            // Mock the bracket tournament mapping
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("bracketTournaments(uint256)", tokenId),
+                abi.encode(tournamentId)
+            );
+            
+            // Mock isScoreSubmitted to return false
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("isScoreSubmitted(uint256)", tokenId),
+                abi.encode(false)
+            );
+            
+            // Mock setIsScoreSubmitted to do nothing
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("setIsScoreSubmitted(uint256)", tokenId),
+                abi.encode()
+            );
+            
+            // Mock bracketHashes to return a valid hash
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("bracketHashes(uint256)", tokenId),
+                abi.encode(bracketHash)
+            );
+            
+            // Mock getTeamWins to return valid wins
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", uint256(1)),
+                abi.encode(uint8(6))
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", uint256(2)),
+                abi.encode(uint8(5))
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", uint256(3)),
+                abi.encode(uint8(4))
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", uint256(4)),
+                abi.encode(uint8(3))
+            );
+            
+            // Mock ownerOf to return the participant
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("ownerOf(uint256)", tokenId),
+                abi.encode(participant)
+            );
+            
+            // Submit the bracket for scoring
+            manager.submitBracketForFinalScoring(tokenId, teamIds, winCounts);
+        }
         
-        manager.finalizeTournament(tournamentId, winners, prizes);
+        // Distribute prizes
+        manager.distributePrizes(tournamentId);
         
         // Verify developer fee was paid to treasury
-        assertEq(token.balanceOf(treasury), treasuryBalanceBefore + 0.1 ether, "Developer fee should be paid to treasury");
+        assertEq(token.balanceOf(treasury), treasuryBalanceBefore + 1 ether, "Developer fee should be paid to treasury");
         
         // Verify developer fee is reset
-        (,,,,,devFeeAccrued,) = manager.getTournament(tournamentId);
+        (,,,,,devFeeAccrued,,) = manager.getTournament(tournamentId);
         assertEq(devFeeAccrued, 0, "Developer fee should be reset after payment");
     }
     
@@ -981,6 +1107,789 @@ contract TournamentManagerTest is Test, IERC721Receiver {
         assertEq(winners[2], tokenId3, "Lowest score should be last");
     }
 
+    function testDistributePrizes() public {
+        // Create a tournament
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
+        
+        // Create 20 participants (so top 10% = 2 winners)
+        address[] memory participants = new address[](20);
+        uint256[] memory tokenIds = new uint256[](20);
+        
+        for (uint256 i = 0; i < 20; i++) {
+            participants[i] = makeAddr(string(abi.encodePacked("participant", i)));
+            vm.deal(participants[i], 1 ether);
+        }
+        
+        // Enter tournament with all participants
+        for (uint256 i = 0; i < 20; i++) {
+            vm.startPrank(participants[i]);
+            
+            // Create unique bracket data for each participant
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6; // Champion
+            winCounts[1] = 5; // Runner-up
+            winCounts[2] = 4; // Final Four
+            winCounts[3] = 3; // Elite 8
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            tokenIds[i] = manager.enterTournament{value: 1 ether}(
+                participants[i],
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+            
+            vm.stopPrank();
+        }
+        
+        // Fast forward to after tournament ends
+        vm.warp(startTime + 30 days);
+        
+        // Mock tournament as over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        
+        // Submit scores for all brackets
+        // We'll make participant[0] and participant[1] the winners with highest scores
+        for (uint256 i = 0; i < 20; i++) {
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            // Mock different scores based on participant index
+            // First two participants get high scores
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[0]),
+                abi.encode(i < 2 ? 6 : 3) // First two get 6 wins, others get 3
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[1]),
+                abi.encode(i < 2 ? 5 : 2)
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[2]),
+                abi.encode(i < 2 ? 4 : 1)
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[3]),
+                abi.encode(i < 2 ? 3 : 0)
+            );
+            
+            manager.submitBracketForFinalScoring(tokenIds[i], teamIds, winCounts);
+        }
+        
+        // Check initial balances
+        uint256 initialBalance0 = participants[0].balance;
+        uint256 initialBalance1 = participants[1].balance;
+        
+        // Distribute prizes
+        manager.distributePrizes(tournamentId);
+        
+        // Get tournament info
+        (,,,,,,, bool isFinalized) = manager.getTournament(tournamentId);
+        assertTrue(isFinalized, "Tournament should be finalized");
+        
+        // Check that prizes were distributed correctly
+        // Top 10% = 2 winners (out of 20 participants)
+        // Total prize pool = 18 ether (20 ether - 10% dev fee)
+        // First place (participant[0]) should get 2/3 of the pool = 12 ether
+        // Second place (participant[1]) should get 1/3 of the pool = 6 ether
+        
+        uint256 finalBalance0 = participants[0].balance;
+        uint256 finalBalance1 = participants[1].balance;
+        
+        assertEq(finalBalance0 - initialBalance0, 12 ether, "First place should receive 12 ether");
+        assertEq(finalBalance1 - initialBalance1, 6 ether, "Second place should receive 6 ether");
+        
+        // Check that prizes were marked as claimed
+        assertTrue(manager.prizesClaimed(tournamentId, tokenIds[0]), "Prize for first place should be marked as claimed");
+        assertTrue(manager.prizesClaimed(tournamentId, tokenIds[1]), "Prize for second place should be marked as claimed");
+    }
+
+    function testDistributePrizesWithERC20() public {
+        // Create a tournament with ERC20 token
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(100 * 10**18, address(token), startTime);
+        
+        // Create 10 participants (so top 10% = 1 winner)
+        address[] memory participants = new address[](10);
+        uint256[] memory tokenIds = new uint256[](10);
+        
+        for (uint256 i = 0; i < 10; i++) {
+            participants[i] = makeAddr(string(abi.encodePacked("participant", i)));
+            token.mint(participants[i], 100 * 10**18);
+        }
+        
+        // Enter tournament with all participants
+        for (uint256 i = 0; i < 10; i++) {
+            vm.startPrank(participants[i]);
+            
+            // Approve token spending
+            token.approve(address(manager), 100 * 10**18);
+            
+            // Create unique bracket data for each participant
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            tokenIds[i] = manager.enterTournament(
+                participants[i],
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+            
+            vm.stopPrank();
+        }
+        
+        // Fast forward to after tournament ends
+        vm.warp(startTime + 30 days);
+        
+        // Mock tournament as over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        
+        // Submit scores for all brackets
+        // We'll make participant[0] the winner with highest score
+        for (uint256 i = 0; i < 10; i++) {
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            // Mock different scores based on participant index
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[0]),
+                abi.encode(i == 0 ? 6 : 3) // First participant gets 6 wins, others get 3
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[1]),
+                abi.encode(i == 0 ? 5 : 2)
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[2]),
+                abi.encode(i == 0 ? 4 : 1)
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[3]),
+                abi.encode(i == 0 ? 3 : 0)
+            );
+            
+            manager.submitBracketForFinalScoring(tokenIds[i], teamIds, winCounts);
+        }
+        
+        // Check initial balance
+        uint256 initialBalance = token.balanceOf(participants[0]);
+        
+        // Distribute prizes
+        manager.distributePrizes(tournamentId);
+        
+        // Get tournament info
+        (,,,,,,, bool isFinalized) = manager.getTournament(tournamentId);
+        assertTrue(isFinalized, "Tournament should be finalized");
+        
+        // Check that prize was distributed correctly
+        // Top 10% = 1 winner (out of 10 participants)
+        // Total prize pool = 900 * 10**18 (1000 * 10**18 - 10% dev fee)
+        
+        uint256 finalBalance = token.balanceOf(participants[0]);
+        assertEq(finalBalance - initialBalance, 900 * 10**18, "Winner should receive 900 tokens");
+        
+        // Check that prize was marked as claimed
+        assertTrue(manager.prizesClaimed(tournamentId, tokenIds[0]), "Prize should be marked as claimed");
+    }
+
+    function testDistributePrizesErrors() public {
+        // Create a tournament
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
+        
+        // Test NotEnoughParticipants
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        vm.expectRevert(TournamentManager.NotEnoughParticipants.selector);
+        manager.distributePrizes(tournamentId);
+        
+        // Add 5 participants (still not enough)
+        for (uint256 i = 0; i < 5; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            vm.deal(participant, 1 ether);
+            
+            vm.startPrank(participant);
+            
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            manager.enterTournament{value: 1 ether}(
+                participant,
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+            
+            vm.stopPrank();
+        }
+        
+        // Still not enough participants
+        vm.expectRevert(TournamentManager.NotEnoughParticipants.selector);
+        manager.distributePrizes(tournamentId);
+        
+        // Test TournamentNotEnded
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(false)
+        );
+        
+        // Add more participants to reach 10
+        for (uint256 i = 5; i < 10; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            vm.deal(participant, 1 ether);
+            
+            vm.startPrank(participant);
+            
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            manager.enterTournament{value: 1 ether}(
+                participant,
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+            
+            vm.stopPrank();
+        }
+        
+        vm.expectRevert(TournamentManager.TournamentNotEnded.selector);
+        manager.distributePrizes(tournamentId);
+        
+        // Test TournamentAlreadyFinalized
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        
+        // Submit scores for all brackets
+        for (uint256 i = 0; i < 10; i++) {           
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            // Mock team wins
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[0]),
+                abi.encode(6)
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[1]),
+                abi.encode(5)
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[2]),
+                abi.encode(4)
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[3]),
+                abi.encode(3)
+            );
+            
+            // Get tokenId for this participant
+            uint256 tokenId = i + 1; // Simplified for test
+            
+            // Mock bracket hash
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("bracketHashes(uint256)", tokenId),
+                abi.encode(bracketHash)
+            );
+            
+            // Mock tournament ID
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("bracketTournaments(uint256)", tokenId),
+                abi.encode(tournamentId)
+            );
+            
+            // Mock isScoreSubmitted
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("isScoreSubmitted(uint256)", tokenId),
+                abi.encode(false)
+            );
+            
+            // Mock setIsScoreSubmitted
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("setIsScoreSubmitted(uint256)", tokenId),
+                abi.encode()
+            );
+            
+            manager.submitBracketForFinalScoring(tokenId, teamIds, winCounts);
+        }
+        
+        // Distribute prizes
+        manager.distributePrizes(tournamentId);
+        
+        // Try to distribute again
+        vm.expectRevert(TournamentManager.TournamentAlreadyFinalized.selector);
+        manager.distributePrizes(tournamentId);
+    }
+
+    function testCalculatePrizeDistribution() public {
+        // Create a tournament
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
+        
+        // Create 20 participants (so top 10% = 2 winners)
+        address[] memory participants = new address[](20);
+        uint256[] memory tokenIds = new uint256[](20);
+        
+        for (uint256 i = 0; i < 20; i++) {
+            participants[i] = makeAddr(string(abi.encodePacked("participant", i)));
+            vm.deal(participants[i], 1 ether);
+        }
+        
+        // Enter tournament with all participants
+        for (uint256 i = 0; i < 20; i++) {
+            vm.startPrank(participants[i]);
+            
+            // Create unique bracket data for each participant
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6; // Champion
+            winCounts[1] = 5; // Runner-up
+            winCounts[2] = 4; // Final Four
+            winCounts[3] = 3; // Elite 8
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            tokenIds[i] = manager.enterTournament{value: 1 ether}(
+                participants[i],
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+            
+            vm.stopPrank();
+        }
+        
+        // Fast forward to after tournament ends
+        vm.warp(startTime + 30 days);
+        
+        // Mock tournament as over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        
+        // Submit scores for all brackets
+        // We'll make participant[0] and participant[1] the winners with highest scores
+        for (uint256 i = 0; i < 20; i++) {
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            // Mock different scores based on participant index
+            // First two participants get high scores
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[0]),
+                abi.encode(i < 2 ? 6 : 3) // First two get 6 wins, others get 3
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[1]),
+                abi.encode(i < 2 ? 5 : 2)
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[2]),
+                abi.encode(i < 2 ? 4 : 1)
+            );
+            vm.mockCall(
+                address(oracle),
+                abi.encodeWithSignature("getTeamWins(uint256)", teamIds[3]),
+                abi.encode(i < 2 ? 3 : 0)
+            );
+            
+            manager.submitBracketForFinalScoring(tokenIds[i], teamIds, winCounts);
+        }
+        
+        // Calculate prize distribution
+        (uint256[] memory winnerTokenIds, uint256[] memory prizeAmounts, uint256 totalWinners) = 
+            manager.calculatePrizeDistribution(tournamentId);
+        
+        // Verify the results
+        assertEq(totalWinners, 2, "Should have 2 winners (10% of 20)");
+        assertEq(winnerTokenIds.length, 2, "Should have 2 winner token IDs");
+        assertEq(prizeAmounts.length, 2, "Should have 2 prize amounts");
+        
+        // Verify the winner token IDs
+        assertEq(winnerTokenIds[0], tokenIds[0], "First winner should be participant 0");
+        assertEq(winnerTokenIds[1], tokenIds[1], "Second winner should be participant 1");
+        
+        // Verify the prize amounts
+        // Total prize pool = 18 ether (20 ether - 10% dev fee)
+        // First place (participant[0]) should get 2/3 of the pool = 12 ether
+        // Second place (participant[1]) should get 1/3 of the pool = 6 ether
+        assertEq(prizeAmounts[0], 12 ether, "First place should receive 12 ether");
+        assertEq(prizeAmounts[1], 6 ether, "Second place should receive 6 ether");
+        
+        // Test with no participants
+        uint256 emptyTournamentId = manager.createTournament(1 ether, address(0), block.timestamp + 1 days);
+        (uint256[] memory emptyWinnerTokenIds, uint256[] memory emptyPrizeAmounts, uint256 emptyTotalWinners) = 
+            manager.calculatePrizeDistribution(emptyTournamentId);
+        
+        assertEq(emptyTotalWinners, 0, "Should have 0 winners for empty tournament");
+        assertEq(emptyWinnerTokenIds.length, 0, "Should have 0 winner token IDs for empty tournament");
+        assertEq(emptyPrizeAmounts.length, 0, "Should have 0 prize amounts for empty tournament");
+    }
+
+    function testInsufficientParticipantsRefund() public {
+        // Create a tournament
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
+        
+        // Enter tournament with 5 participants (less than MIN_PARTICIPANTS which is 10)
+        for (uint256 i = 0; i < 5; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            vm.deal(participant, 1 ether);
+            
+            vm.startPrank(participant);
+            
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            manager.enterTournament{value: 1 ether}(
+                participant,
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+            
+            vm.stopPrank();
+        }
+        
+        // Try to claim refund before tournament starts - should fail
+        address participant0 = makeAddr("participant0");
+        uint256 tokenId = 1; // First token ID
+        
+        // Mock the bracket tournament mapping
+        vm.mockCall(
+            address(nft),
+            abi.encodeWithSignature("bracketTournaments(uint256)", tokenId),
+            abi.encode(tournamentId)
+        );
+        
+        // Mock the owner of the bracket
+        vm.mockCall(
+            address(nft),
+            abi.encodeWithSignature("ownerOf(uint256)", tokenId),
+            abi.encode(participant0)
+        );
+        
+        vm.prank(participant0);
+        vm.expectRevert(TournamentManager.TournamentNotStarted.selector);
+        manager.claimInsufficientParticipantsRefund(tokenId);
+        
+        // Fast forward to after tournament start time
+        vm.warp(startTime + 1 hours);
+        
+        // Check participant balance before refund
+        uint256 balanceBefore = participant0.balance;
+        
+        // Claim refund
+        vm.prank(participant0);
+        manager.claimInsufficientParticipantsRefund(tokenId);
+        
+        // Verify participant received the refund
+        assertEq(participant0.balance, balanceBefore + 1 ether, "Participant should receive full entry fee as refund");
+        
+        // Verify bracket is marked as refunded
+        assertTrue(manager.isRefunded(tokenId));
+        
+        // Try to claim again - should fail
+        vm.prank(participant0);
+        vm.expectRevert(TournamentManager.BracketAlreadyRefunded.selector);
+        manager.claimInsufficientParticipantsRefund(tokenId);
+        
+        // Try to distribute prizes - should fail due to not enough participants
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        vm.expectRevert(TournamentManager.NotEnoughParticipants.selector);
+        manager.distributePrizes(tournamentId);
+    }
+    
+    function testInsufficientParticipantsRefundWithERC20() public {
+        // Create a tournament with ERC20 token
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(token), startTime);
+        
+        // Enter tournament with 5 participants (less than MIN_PARTICIPANTS which is 10)
+        for (uint256 i = 0; i < 5; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            
+            // Mint tokens to participant
+            token.mint(participant, 1 ether);
+            
+            vm.startPrank(participant);
+            
+            // Approve tokens for tournament manager
+            token.approve(address(manager), 1 ether);
+            
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            manager.enterTournament(
+                participant,
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+            
+            vm.stopPrank();
+        }
+        
+        // Fast forward to after tournament start time
+        vm.warp(startTime + 1 hours);
+        
+        // Get the first participant's token ID
+        address participant0 = makeAddr("participant0");
+        uint256 tokenId = 6; // First token ID for this test (after the 5 from previous test)
+        
+        // Mock the bracket tournament mapping
+        vm.mockCall(
+            address(nft),
+            abi.encodeWithSignature("bracketTournaments(uint256)", tokenId),
+            abi.encode(tournamentId)
+        );
+        
+        // Mock the owner of the bracket
+        vm.mockCall(
+            address(nft),
+            abi.encodeWithSignature("ownerOf(uint256)", tokenId),
+            abi.encode(participant0)
+        );
+        
+        // Check participant token balance before refund
+        uint256 balanceBefore = token.balanceOf(participant0);
+        
+        // Claim refund
+        vm.prank(participant0);
+        manager.claimInsufficientParticipantsRefund(tokenId);
+        
+        // Verify participant received the token refund
+        assertEq(token.balanceOf(participant0), balanceBefore + 1 ether, "Participant should receive full entry fee as token refund");
+    }
+    
+    function testCannotClaimRefundWithEnoughParticipants() public {
+        // Create a tournament
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
+        
+        // Enter tournament with MIN_PARTICIPANTS (10)
+        for (uint256 i = 0; i < 10; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            vm.deal(participant, 1 ether);
+            
+            vm.startPrank(participant);
+            
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            manager.enterTournament{value: 1 ether}(
+                participant,
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+            
+            vm.stopPrank();
+        }
+        
+        // Fast forward to after tournament start time
+        vm.warp(startTime + 1 hours);
+        
+        // Try to claim refund - should fail because there are enough participants
+        address participant0 = makeAddr("participant0");
+        uint256 tokenId = 1; // First token ID for this test
+        
+        // Mock the bracket tournament mapping
+        vm.mockCall(
+            address(nft),
+            abi.encodeWithSignature("bracketTournaments(uint256)", tokenId),
+            abi.encode(tournamentId)
+        );
+        
+        // Mock the owner of the bracket
+        vm.mockCall(
+            address(nft),
+            abi.encodeWithSignature("ownerOf(uint256)", tokenId),
+            abi.encode(participant0)
+        );
+        
+        vm.prank(participant0);
+        vm.expectRevert(TournamentManager.TournamentHasEnoughParticipants.selector);
+        manager.claimInsufficientParticipantsRefund(tokenId);
+    }
+
     // Helper functions
     function createTournamentHelper(uint256 entryFee, address paymentToken) internal returns (uint256) {
         uint256 startTime = block.timestamp + 1 days;
@@ -994,7 +1903,7 @@ contract TournamentManagerTest is Test, IERC721Receiver {
         uint256 tiebreaker,
         string memory bracketURI
     ) internal returns (uint256) {
-        (uint256 entryFee, address paymentToken,,,,, ) = manager.getTournament(tournamentId);
+        (uint256 entryFee, address paymentToken,,,,,, ) = manager.getTournament(tournamentId);
         if (paymentToken == address(0)) {
             vm.deal(participant, entryFee);
             vm.prank(participant);

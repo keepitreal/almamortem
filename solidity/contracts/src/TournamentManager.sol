@@ -38,6 +38,12 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     error BracketAlreadyRefunded();
     error RefundFailed();
     error BracketAlreadyScored();
+    error NotEnoughParticipants();
+    error TournamentAlreadyFinalized();
+    error InvalidPrizeDistribution();
+    error TournamentNotStarted();
+    error TournamentHasEnoughParticipants();
+    error TournamentAlreadyRefunded();
 
     // Structs
     struct Tournament {
@@ -48,9 +54,12 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         uint256 totalEntries;
         uint256 developerFeeAccrued; // Track developer fee separately
         address[] winners;         // Ordered list of winners (max 3)
+        bool isFinalized;          // Whether prizes have been distributed
     }
 
     // Constants
+    uint256 public constant MIN_PARTICIPANTS = 10;
+    uint256 public constant TOP_10_PERCENT_WIN_PRIZES = 10;
     uint256 public constant DEVELOPER_FEE = 1000;  // 10% (basis points)
     uint256 public constant MAX_WINNERS = 3;       // Configurable number of winners
     address public immutable BRACKET_NFT;
@@ -62,6 +71,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     uint256 public nextTournamentId;
     mapping(uint256 tournamentId => uint256[] sortedTokenIdsByScore) public tournamentWinners;
     mapping(uint256 tournamentId => uint256[] sortedScores) public tournamentScores;
+    mapping(uint256 tournamentId => mapping(uint256 tokenId => bool)) public prizesClaimed;
 
     // In the event of a catastrophic event, we can enable emergency refunds for all players
     bool public emergencyRefundEnabled;
@@ -93,6 +103,9 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     event GameScoreOracleUpdated(address indexed oldGameScoreOracle, address indexed newGameScoreOracle);
     event EmergencyRefundEnabledStateChange(bool enabled);
     event DeveloperFeePaid(uint256 indexed tournamentId, uint256 amount);
+    event PrizeDistributed(uint256 indexed tournamentId, uint256 indexed tokenId, address indexed winner, uint256 amount);
+    event PrizesDistributed(uint256 indexed tournamentId, uint256 totalPrizePool, uint256 totalWinners);
+    event BracketRefunded(uint256 indexed tournamentId, uint256 indexed tokenId, address indexed participant, uint256 amount);
 
     constructor(address _bracketNFT, address _treasury, address _gameScoreOracle) Ownable(msg.sender) {
         if (_bracketNFT == address(0)) revert InvalidNFTAddress();
@@ -119,7 +132,8 @@ contract TournamentManager is Ownable, ReentrancyGuard {
             prizePool: 0,
             totalEntries: 0,
             developerFeeAccrued: 0,
-            winners: new address[](0)
+            winners: new address[](0),
+            isFinalized: false
         });
 
         emit TournamentCreated(
@@ -179,51 +193,6 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         return tokenId;
     }
 
-    function finalizeTournament(
-        uint256 tournamentId,
-        address[] calldata winners,
-        uint256[] calldata prizes
-    ) external {
-        if (emergencyRefundEnabled) revert IncompatibleEmergencyRefundState();
-        if (!GameScoreOracle(gameScoreOracle).isTournamentOver()) revert TournamentNotEnded();
-        Tournament storage tournament = tournaments[tournamentId];
-        
-        if (winners.length > MAX_WINNERS) revert TooManyWinners();
-        if (winners.length != prizes.length) revert WinnersPrizesLengthMismatch();
-
-        uint256 totalPrizes;
-        for (uint256 i = 0; i < prizes.length; i++) {
-            totalPrizes += prizes[i];
-        }
-        if (totalPrizes > tournament.prizePool) revert PrizesExceedPool();
-
-        tournament.winners = winners;
-
-        // Distribute prizes
-        for (uint256 i = 0; i < winners.length; i++) {
-            if (tournament.paymentToken == address(0)) {
-                (bool success, ) = winners[i].call{value: prizes[i]}("");
-                if (!success) revert PrizeTransferFailed();
-            } else {
-                IERC20(tournament.paymentToken).safeTransfer(winners[i], prizes[i]);
-            }
-        }
-
-        // Now that the tournament is finalized, pay out the developer fee
-        if (tournament.developerFeeAccrued > 0) {
-            if (tournament.paymentToken == address(0)) {
-                (bool success, ) = developerTreasury.call{value: tournament.developerFeeAccrued}("");
-                if (!success) revert DevFeeTransferFailed();
-            } else {
-                IERC20(tournament.paymentToken).safeTransfer(developerTreasury, tournament.developerFeeAccrued);
-            }
-            emit DeveloperFeePaid(tournamentId, tournament.developerFeeAccrued);
-            tournament.developerFeeAccrued = 0;
-        }
-
-        emit TournamentFinalized(tournamentId, winners, prizes);
-    }
-
     // View Functions
     function getTournament(uint256 tournamentId) external view returns (
         uint256 entryFee,
@@ -232,7 +201,8 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         uint256 prizePool,
         uint256 totalEntries,
         uint256 developerFeeAccrued,
-        address[] memory winners
+        address[] memory winners,
+        bool isFinalized
     ) {
         Tournament storage tournament = tournaments[tournamentId];
         return (
@@ -242,7 +212,8 @@ contract TournamentManager is Ownable, ReentrancyGuard {
             tournament.prizePool,
             tournament.totalEntries,
             tournament.developerFeeAccrued,
-            tournament.winners
+            tournament.winners,
+            tournament.isFinalized
         );
     }
 
@@ -404,6 +375,123 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         winners[insertAt] = tokenId;
     }
 
+    /**
+     * @notice Calculates the prize distribution for the top 10% of winners in a tournament
+     * @param tournamentId The ID of the tournament to calculate prizes for
+     * @return winnerTokenIds Array of token IDs of the winners in order of ranking
+     * @return prizeAmounts Array of prize amounts corresponding to each winner
+     * @return totalWinners The number of winners who will receive prizes
+     */
+    function calculatePrizeDistribution(uint256 tournamentId) public view returns (
+        uint256[] memory winnerTokenIds,
+        uint256[] memory prizeAmounts,
+        uint256 totalWinners
+    ) {
+        Tournament storage tournament = tournaments[tournamentId];
+        uint256[] storage sortedTokenIds = tournamentWinners[tournamentId];
+        uint256 totalEntries = tournament.totalEntries;
+        
+        // Need at least min participants to have a meaningful top 10%
+        if (totalEntries < MIN_PARTICIPANTS) {
+            return (new uint256[](0), new uint256[](0), 0);
+        }
+        
+        // Calculate number of winners (top 10%)
+        totalWinners = totalEntries / TOP_10_PERCENT_WIN_PRIZES;
+        if (totalWinners == 0) totalWinners = 1; // At least one winner
+        
+        // Ensure we don't exceed the number of scored brackets
+        if (totalWinners > sortedTokenIds.length) {
+            totalWinners = sortedTokenIds.length;
+        }
+        
+        winnerTokenIds = new uint256[](totalWinners);
+        prizeAmounts = new uint256[](totalWinners);
+        
+        // If no winners, return empty arrays
+        if (totalWinners == 0) {
+            return (winnerTokenIds, prizeAmounts, totalWinners);
+        }
+        
+        // Calculate prize distribution using a weighted approach
+        // The weights follow a linear distribution where:
+        // - 1st place gets numWinners weight
+        // - 2nd place gets numWinners-1 weight
+        // - ...
+        // - Last place gets 1 weight
+        
+        uint256 totalWeight = (totalWinners * (totalWinners + 1)) / 2;
+        uint256 prizePool = tournament.prizePool;
+        
+        // Calculate prize amounts for each winner
+        for (uint256 i = 0; i < totalWinners; i++) {
+            winnerTokenIds[i] = sortedTokenIds[i];
+            
+            // Calculate prize amount based on rank weight
+            uint256 weight = totalWinners - i;
+            prizeAmounts[i] = (prizePool * weight) / totalWeight;
+        }
+        
+        return (winnerTokenIds, prizeAmounts, totalWinners);
+    }
+
+    /**
+     * @notice Distributes prizes to the top 10% of winners in a tournament
+     * @param tournamentId The ID of the tournament to distribute prizes for
+     * @dev Prize distribution follows a weighted approach where higher ranks get larger prizes
+     */
+    function distributePrizes(uint256 tournamentId) external nonReentrant {
+        if (emergencyRefundEnabled) revert IncompatibleEmergencyRefundState();
+        if (!GameScoreOracle(gameScoreOracle).isTournamentOver()) revert TournamentNotEnded();
+        
+        Tournament storage tournament = tournaments[tournamentId];
+        if (tournament.isFinalized) revert TournamentAlreadyFinalized();
+        
+        // Calculate prize distribution
+        (uint256[] memory winnerTokenIds, uint256[] memory prizeAmounts, uint256 totalWinners) = 
+            calculatePrizeDistribution(tournamentId);
+        
+        // Need at least min participants to have a meaningful top 10%
+        if (tournament.totalEntries < MIN_PARTICIPANTS) revert NotEnoughParticipants();
+        
+        // Distribute prizes
+        for (uint256 i = 0; i < totalWinners; i++) {
+            uint256 tokenId = winnerTokenIds[i];
+            address winner = BracketNFT(BRACKET_NFT).ownerOf(tokenId);
+            uint256 prizeAmount = prizeAmounts[i];
+            
+            // Transfer prize
+            if (tournament.paymentToken == address(0)) {
+                (bool success, ) = winner.call{value: prizeAmount}("");
+                if (!success) revert PrizeTransferFailed();
+            } else {
+                IERC20(tournament.paymentToken).safeTransfer(winner, prizeAmount);
+            }
+            
+            // Mark prize as claimed
+            prizesClaimed[tournamentId][tokenId] = true;
+            
+            emit PrizeDistributed(tournamentId, tokenId, winner, prizeAmount);
+        }
+        
+        // Mark tournament as finalized
+        tournament.isFinalized = true;
+        
+        // Pay out developer fee
+        if (tournament.developerFeeAccrued > 0) {
+            if (tournament.paymentToken == address(0)) {
+                (bool success, ) = developerTreasury.call{value: tournament.developerFeeAccrued}("");
+                if (!success) revert DevFeeTransferFailed();
+            } else {
+                IERC20(tournament.paymentToken).safeTransfer(developerTreasury, tournament.developerFeeAccrued);
+            }
+            emit DeveloperFeePaid(tournamentId, tournament.developerFeeAccrued);
+            tournament.developerFeeAccrued = 0;
+        }
+        
+        emit PrizesDistributed(tournamentId, tournament.prizePool, totalWinners);
+    }
+
     function hashMatches(uint256 tokenId, uint256[] calldata teamIds, uint256[] calldata winCounts) public view returns (bool) {
         bytes32 storedHash = BracketNFT(BRACKET_NFT).bracketHashes(tokenId);
         bytes32 hash = keccak256(abi.encode(teamIds, winCounts));
@@ -465,6 +553,49 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         address oldGameScoreOracle = address(gameScoreOracle);
         gameScoreOracle = GameScoreOracle(_gameScoreOracle);
         emit GameScoreOracleUpdated(oldGameScoreOracle, _gameScoreOracle);
+    }
+
+    /**
+     * @notice Allows a player to claim a refund for a tournament that didn't meet the minimum participant threshold
+     * @param tokenId The ID of the bracket NFT to refund
+     * @dev Can be called by anyone after the tournament start time if there are fewer than MIN_PARTICIPANTS
+     */
+    function claimInsufficientParticipantsRefund(uint256 tokenId) external nonReentrant {
+        // Get the tournament ID from the bracket
+        uint256 tournamentId = BracketNFT(BRACKET_NFT).bracketTournaments(tokenId);
+        Tournament storage tournament = tournaments[tournamentId];
+        
+        // Check that the tournament has started
+        if (block.timestamp < tournament.startTime) revert TournamentNotStarted();
+        
+        // Check that the tournament doesn't have enough participants
+        if (tournament.totalEntries >= MIN_PARTICIPANTS) revert TournamentHasEnoughParticipants();
+        
+        // Check that this bracket hasn't already been refunded
+        if (isRefunded[tokenId]) revert BracketAlreadyRefunded();
+        
+        // Mark as refunded
+        isRefunded[tokenId] = true;
+        
+        // Get the owner of the bracket
+        address owner = BracketNFT(BRACKET_NFT).ownerOf(tokenId);
+        
+        // Refund the full entry fee
+        if (tournament.paymentToken == address(0)) {
+            (bool success, ) = owner.call{value: tournament.entryFee}("");
+            if (!success) revert RefundFailed();
+        } else {
+            IERC20(tournament.paymentToken).safeTransfer(owner, tournament.entryFee);
+        }
+        
+        // Adjust the prize pool and developer fee to account for the refund
+        uint256 devFee = (tournament.entryFee * DEVELOPER_FEE) / 10000;
+        uint256 prizeAmount = tournament.entryFee - devFee;
+        
+        tournament.prizePool -= prizeAmount;
+        tournament.developerFeeAccrued -= devFee;
+        
+        emit BracketRefunded(tournamentId, tokenId, owner, tournament.entryFee);
     }
 
     // Receive function to accept ETH
