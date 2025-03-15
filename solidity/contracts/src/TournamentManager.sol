@@ -31,6 +31,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     error PrizeTransferFailed();
     error InvalidWinCounts();
     error InvalidTeamId();
+    error InvalidWinDistribution();
     error TeamIdsWinCountsLengthMismatch();
     error InvalidHash();
     error IncompatibleEmergencyRefundState();
@@ -251,7 +252,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
      * @param teamIds Array of team IDs in the bracket
      * @param winCounts Array of predicted win counts for each team
      * @return score The number of points earned based on correct picks (max 192)
-     */
+    */
     function scoreBracket(
         uint256 tokenId,
         uint256[] calldata teamIds,
@@ -260,19 +261,8 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         // Validate array lengths match
         if (teamIds.length != winCounts.length) revert TeamIdsWinCountsLengthMismatch();
 
-        // Validate team IDs and win counts
-        uint256 championCount = 0;
-        for (uint256 i = 0; i < teamIds.length; i++) {
-            // Validate team ID
-            if (teamIds[i] == 0) revert InvalidTeamId();
-            
-            // Validate win count
-            if (winCounts[i] > 6) revert InvalidWinCounts();
-            if (winCounts[i] == 6) championCount++;
-        }
-
-        // Ensure exactly one champion (if we have any teams with wins)
-        if (teamIds.length > 0 && championCount != 1) revert InvalidWinCounts();
+        // Validate team IDs and win distribution
+        validateBracketWinDistribution(teamIds, winCounts);
 
         // Invalid hashes get a score of 0
         if (!hashMatches(tokenId, teamIds, winCounts)) return 0;
@@ -297,12 +287,85 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         return score;
     }
 
+    /**
+     * @notice Validates that the bracket follows the correct win distribution rules
+     * @param teamIds Array of team IDs in the bracket
+     * @param winCounts Array of predicted win counts for each team
+     * @dev Enforces the following win distribution rules for a valid bracket:
+     *      - 6 wins: 1 team (National Champion)
+     *      - 5 wins: 1 team (Runner-up, loses in championship)
+     *      - 4 wins: 2 teams (Lose in Final Four)
+     *      - 3 wins: 4 teams (Lose in Elite Eight)
+     *      - 2 wins: 8 teams (Lose in Sweet Sixteen)
+     *      - 1 win: 16 teams (Lose in Round of 32)
+     */
+    function validateBracketWinDistribution(
+        uint256[] calldata teamIds,
+        uint256[] calldata winCounts
+    ) public pure {
+        // Validate team IDs and win counts
+        uint256 championCount = 0;
+        uint256 runnerUpCount = 0;
+        uint256 finalFourCount = 0;
+        uint256 eliteEightCount = 0;
+        uint256 sweetSixteenCount = 0;
+        uint256 roundOf32Count = 0;
+        uint256 noWinsCount = 0;
+
+        for (uint256 i = 0; i < teamIds.length; i++) {
+            // Validate team ID
+            if (teamIds[i] == 0) revert InvalidTeamId();
+            
+            // Validate win count
+            if (winCounts[i] > 6) revert InvalidWinCounts();
+            
+            // Count teams by their win counts
+            if (winCounts[i] == 6) championCount++;
+            else if (winCounts[i] == 5) runnerUpCount++;
+            else if (winCounts[i] == 4) finalFourCount++;
+            else if (winCounts[i] == 3) eliteEightCount++;
+            else if (winCounts[i] == 2) sweetSixteenCount++;
+            else if (winCounts[i] == 1) roundOf32Count++;
+            else if (winCounts[i] == 0) noWinsCount++;
+        }
+
+        // Enforce the win distribution rules
+        if (championCount != 1) revert InvalidWinCounts();
+        
+        // Only validate complete brackets (64 teams)
+        if (teamIds.length == 64) {
+            // Validate win distribution according to tournament structure
+            if (runnerUpCount != 1 ||
+                finalFourCount != 2 ||
+                eliteEightCount != 4 ||
+                sweetSixteenCount != 8 ||
+                roundOf32Count != 16) {
+                revert InvalidWinDistribution();
+            }
+            
+            // Ensure the total number of teams with wins is 32
+            uint256 teamsWithWins = championCount + runnerUpCount + finalFourCount + 
+                                   eliteEightCount + sweetSixteenCount + roundOf32Count;
+            if (teamsWithWins != 32) {
+                revert InvalidWinDistribution();
+            }
+            
+            // Ensure the number of teams with 0 wins is also 32 (teams that lose in first round)
+            if (noWinsCount != 32) {
+                revert InvalidWinDistribution();
+            }
+        }
+    }
+
     function submitBracketForFinalScoring(uint256 tokenId, uint256[] calldata teamIds, uint256[] calldata winCounts) external {
         // Safety checks
         if (emergencyRefundEnabled) revert IncompatibleEmergencyRefundState();
         if (!GameScoreOracle(gameScoreOracle).isTournamentOver()) revert TournamentNotEnded();
         if (BracketNFT(BRACKET_NFT).isScoreSubmitted(tokenId)) revert BracketAlreadyScored();
         if (!hashMatches(tokenId, teamIds, winCounts)) revert InvalidHash();
+        
+        // Validate the bracket win distribution
+        validateBracketWinDistribution(teamIds, winCounts);
         
         // Set the bracket as scored
         BracketNFT(BRACKET_NFT).setIsScoreSubmitted(tokenId);

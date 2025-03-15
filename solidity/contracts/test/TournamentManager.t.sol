@@ -390,6 +390,217 @@ contract TournamentManagerTest is Test, IERC721Receiver {
         assertEq(score, 68, "Score should award points only for actual wins up to predicted round");
     }
 
+    function testValidateBracketWinDistribution() public {
+        // Create a tournament
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
+        
+        // Create a complete bracket with 64 teams
+        uint256[] memory teamIds = new uint256[](64);
+        uint256[] memory winCounts = new uint256[](64);
+        
+        // Fill in team IDs (1-64)
+        for (uint256 i = 0; i < 64; i++) {
+            teamIds[i] = i + 1;
+        }
+        
+        // Set up a valid win distribution:
+        // - 1 team with 6 wins (champion)
+        // - 1 team with 5 wins (runner-up)
+        // - 2 teams with 4 wins (final four losers)
+        // - 4 teams with 3 wins (elite eight losers)
+        // - 8 teams with 2 wins (sweet sixteen losers)
+        // - 16 teams with 1 win (round of 32 losers)
+        // - 32 teams with 0 wins (round of 64 losers)
+        
+        // Champion (1 team)
+        winCounts[0] = 6;
+        
+        // Runner-up (1 team)
+        winCounts[1] = 5;
+        
+        // Final Four losers (2 teams)
+        for (uint256 i = 2; i < 4; i++) {
+            winCounts[i] = 4;
+        }
+        
+        // Elite Eight losers (4 teams)
+        for (uint256 i = 4; i < 8; i++) {
+            winCounts[i] = 3;
+        }
+        
+        // Sweet Sixteen losers (8 teams)
+        for (uint256 i = 8; i < 16; i++) {
+            winCounts[i] = 2;
+        }
+        
+        // Round of 32 losers (16 teams)
+        for (uint256 i = 16; i < 32; i++) {
+            winCounts[i] = 1;
+        }
+        
+        // Round of 64 losers (32 teams)
+        for (uint256 i = 32; i < 64; i++) {
+            winCounts[i] = 0;
+        }
+        
+        // Generate bracket hash
+        bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+        
+        // Enter tournament with computed hash
+        vm.deal(address(this), 1 ether);
+        uint256 tokenId = manager.enterTournament{value: 1 ether}(
+            user1,
+            tournamentId,
+            bracketHash,
+            0,
+            "uri"
+        );
+        
+        // This should not revert
+        manager.validateBracketWinDistribution(teamIds, winCounts);
+        
+        // Now test invalid distributions
+        
+        // Test 1: Two champions
+        uint256[] memory invalidWinCounts1 = new uint256[](64);
+        for (uint256 i = 0; i < 64; i++) {
+            invalidWinCounts1[i] = winCounts[i];
+        }
+        invalidWinCounts1[2] = 6; // Second champion
+        
+        vm.expectRevert(TournamentManager.InvalidWinCounts.selector);
+        manager.validateBracketWinDistribution(teamIds, invalidWinCounts1);
+        
+        // Test 2: Wrong number of runner-ups
+        uint256[] memory invalidWinCounts2 = new uint256[](64);
+        for (uint256 i = 0; i < 64; i++) {
+            invalidWinCounts2[i] = winCounts[i];
+        }
+        invalidWinCounts2[1] = 4; // Change runner-up to final four
+        invalidWinCounts2[4] = 5; // Add another runner-up
+        
+        vm.expectRevert(TournamentManager.InvalidWinDistribution.selector);
+        manager.validateBracketWinDistribution(teamIds, invalidWinCounts2);
+        
+        // Test 3: Wrong number of final four teams
+        uint256[] memory invalidWinCounts3 = new uint256[](64);
+        for (uint256 i = 0; i < 64; i++) {
+            invalidWinCounts3[i] = winCounts[i];
+        }
+        invalidWinCounts3[2] = 3; // Change final four to elite eight
+        
+        vm.expectRevert(TournamentManager.InvalidWinDistribution.selector);
+        manager.validateBracketWinDistribution(teamIds, invalidWinCounts3);
+        
+        // Test 4: Wrong number of elite eight teams
+        uint256[] memory invalidWinCounts4 = new uint256[](64);
+        for (uint256 i = 0; i < 64; i++) {
+            invalidWinCounts4[i] = winCounts[i];
+        }
+        invalidWinCounts4[4] = 2; // Change elite eight to sweet sixteen
+        
+        vm.expectRevert(TournamentManager.InvalidWinDistribution.selector);
+        manager.validateBracketWinDistribution(teamIds, invalidWinCounts4);
+        
+        // Test 5: Wrong number of sweet sixteen teams
+        uint256[] memory invalidWinCounts5 = new uint256[](64);
+        for (uint256 i = 0; i < 64; i++) {
+            invalidWinCounts5[i] = winCounts[i];
+        }
+        invalidWinCounts5[8] = 1; // Change sweet sixteen to round of 32
+        
+        vm.expectRevert(TournamentManager.InvalidWinDistribution.selector);
+        manager.validateBracketWinDistribution(teamIds, invalidWinCounts5);
+        
+        // Test 6: Wrong number of round of 32 teams
+        uint256[] memory invalidWinCounts6 = new uint256[](64);
+        for (uint256 i = 0; i < 64; i++) {
+            invalidWinCounts6[i] = winCounts[i];
+        }
+        invalidWinCounts6[16] = 0; // Change round of 32 to round of 64
+        
+        vm.expectRevert(TournamentManager.InvalidWinDistribution.selector);
+        manager.validateBracketWinDistribution(teamIds, invalidWinCounts6);
+    }
+
+    function testScoreBracketWithInvalidWinDistribution() public {
+        // Create a tournament
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
+        
+        // Create a complete bracket with 64 teams
+        uint256[] memory teamIds = new uint256[](64);
+        uint256[] memory winCounts = new uint256[](64);
+        
+        // Fill in team IDs (1-64)
+        for (uint256 i = 0; i < 64; i++) {
+            teamIds[i] = i + 1;
+        }
+        
+        // Set up an invalid win distribution with wrong number of teams in each round
+        // Champion (1 team)
+        winCounts[0] = 6;
+        
+        // Runner-up (1 team)
+        winCounts[1] = 5;
+        
+        // Final Four losers (3 teams instead of 2)
+        for (uint256 i = 2; i < 5; i++) {
+            winCounts[i] = 4;
+        }
+        
+        // Elite Eight losers (3 teams instead of 4)
+        for (uint256 i = 5; i < 8; i++) {
+            winCounts[i] = 3;
+        }
+        
+        // Sweet Sixteen losers (8 teams)
+        for (uint256 i = 8; i < 16; i++) {
+            winCounts[i] = 2;
+        }
+        
+        // Round of 32 losers (16 teams)
+        for (uint256 i = 16; i < 32; i++) {
+            winCounts[i] = 1;
+        }
+        
+        // Round of 64 losers (32 teams)
+        for (uint256 i = 32; i < 64; i++) {
+            winCounts[i] = 0;
+        }
+        
+        // Generate bracket hash
+        bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+        
+        // Enter tournament with computed hash
+        vm.deal(address(this), 1 ether);
+        uint256 tokenId = manager.enterTournament{value: 1 ether}(
+            user1,
+            tournamentId,
+            bracketHash,
+            0,
+            "uri"
+        );
+        
+        // Scoring should fail due to invalid win distribution
+        vm.expectRevert(TournamentManager.InvalidWinDistribution.selector);
+        manager.scoreBracket(tokenId, teamIds, winCounts);
+        
+        // Also test that submitBracketForFinalScoring fails
+        vm.warp(startTime + 30 days); // Fast forward to after tournament
+        
+        // Mock the oracle to say tournament is over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        
+        vm.expectRevert(TournamentManager.InvalidWinDistribution.selector);
+        manager.submitBracketForFinalScoring(tokenId, teamIds, winCounts);
+    }
+
     receive() external payable {}
 
     function testEmergencyRefundFeature() public {
