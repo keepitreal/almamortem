@@ -3,7 +3,6 @@ import { z } from "zod";
 import { redis } from "~/lib/redis";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import type { Team } from "~/types/bracket";
-
 interface ESPNTeamLogo {
   href: string;
   alt: string;

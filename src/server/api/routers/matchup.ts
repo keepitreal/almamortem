@@ -4,6 +4,7 @@ import {
   SEASON,
 } from "~/constants";
 import { EVENT_PROGRESSION_2025 } from "~/constants";
+import { generateTeamId } from "~/helpers/generateTeamId";
 import { redis } from "~/lib/redis";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import type { Matchup, Region } from "~/types/bracket";
@@ -265,7 +266,7 @@ export const matchupRouter = createTRPCRouter({
         previousMatchupIds: [], // We'll fill this in after creating the map
         topTeam: homeTeam
           ? {
-              id: homeTeam.id,
+              id: generateTeamId(region, homeTeamCompetitor?.curatedRank.current ?? 16),
               name: homeTeam.name,
               mascot: homeTeam.mascot,
               seed: homeTeamCompetitor?.curatedRank.current ?? 16,
@@ -278,7 +279,7 @@ export const matchupRouter = createTRPCRouter({
           : null,
         bottomTeam: awayTeam
           ? {
-              id: awayTeam.id,
+              id: generateTeamId(region, awayTeamCompetitor?.curatedRank.current ?? 16),
               name: awayTeam.name,
               mascot: awayTeam.mascot,
               seed: awayTeamCompetitor?.curatedRank.current ?? 16,
