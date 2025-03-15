@@ -44,7 +44,8 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     error TournamentNotStarted();
     error TournamentHasEnoughParticipants();
     error TournamentAlreadyRefunded();
-
+    error TournamentDeadlineNotMet();
+    error DeadlineAlreadySet();
     // Structs
     struct Tournament {
         uint256 entryFee;
@@ -72,6 +73,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     mapping(uint256 tournamentId => uint256[] sortedTokenIdsByScore) public tournamentWinners;
     mapping(uint256 tournamentId => uint256[] sortedScores) public tournamentScores;
     mapping(uint256 tournamentId => mapping(uint256 tokenId => bool)) public prizesClaimed;
+    uint256 public deadlineToSubmitBrackets;
 
     // In the event of a catastrophic event, we can enable emergency refunds for all players
     bool public emergencyRefundEnabled;
@@ -106,6 +108,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     event PrizeDistributed(uint256 indexed tournamentId, uint256 indexed tokenId, address indexed winner, uint256 amount);
     event PrizesDistributed(uint256 indexed tournamentId, uint256 totalPrizePool, uint256 totalWinners);
     event BracketRefunded(uint256 indexed tournamentId, uint256 indexed tokenId, address indexed participant, uint256 amount);
+    event DeadlineToSubmitBracketsUpdated(uint256 deadlineToSubmitBrackets);
 
     constructor(address _bracketNFT, address _treasury, address _gameScoreOracle) Ownable(msg.sender) {
         if (_bracketNFT == address(0)) revert InvalidNFTAddress();
@@ -441,6 +444,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
      * @dev Prize distribution follows a weighted approach where higher ranks get larger prizes
      */
     function distributePrizes(uint256 tournamentId) external nonReentrant {
+        if (block.timestamp != 0 && block.timestamp < deadlineToSubmitBrackets) revert TournamentDeadlineNotMet();
         if (emergencyRefundEnabled) revert IncompatibleEmergencyRefundState();
         if (!GameScoreOracle(gameScoreOracle).isTournamentOver()) revert TournamentNotEnded();
         
@@ -553,6 +557,14 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         address oldGameScoreOracle = address(gameScoreOracle);
         gameScoreOracle = GameScoreOracle(_gameScoreOracle);
         emit GameScoreOracleUpdated(oldGameScoreOracle, _gameScoreOracle);
+    }
+
+    // Once the tournament is over, anyone can kick off a 24h countdown to submit brackets
+    function setDeadlineToSubmitBrackets() external {
+        if (deadlineToSubmitBrackets != 0) revert DeadlineAlreadySet();
+        if (!GameScoreOracle(gameScoreOracle).isTournamentOver()) revert TournamentNotEnded();
+        deadlineToSubmitBrackets = block.timestamp + 24 hours;
+        emit DeadlineToSubmitBracketsUpdated(deadlineToSubmitBrackets);
     }
 
     /**

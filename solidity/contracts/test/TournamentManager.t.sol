@@ -1916,4 +1916,228 @@ contract TournamentManagerTest is Test, IERC721Receiver {
             );
         }
     }
+    
+    // Tests for the deadline feature
+    function testCannotSetDeadlineIfTournamentNotOver() public {
+        // Create a tournament
+        createTournamentHelper(1 ether, address(0));
+        
+        // Mock that tournament is NOT over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(false)
+        );
+        
+        // Try to set deadline - should fail
+        vm.expectRevert(TournamentManager.TournamentNotEnded.selector);
+        manager.setDeadlineToSubmitBrackets();
+    }
+    
+    function testCanSetDeadlineIfTournamentOver() public {
+        // Create a tournament
+        createTournamentHelper(1 ether, address(0));
+        
+        // Mock that tournament is over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        
+        // Set deadline - should succeed
+        manager.setDeadlineToSubmitBrackets();
+        
+        // Verify deadline is set to 24 hours in the future
+        assertEq(manager.deadlineToSubmitBrackets(), block.timestamp + 24 hours);
+    }
+    
+    function testCannotSetDeadlineTwice() public {
+        // Create a tournament
+        createTournamentHelper(1 ether, address(0));
+        
+        // Mock that tournament is over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        
+        // Set deadline first time - should succeed
+        manager.setDeadlineToSubmitBrackets();
+        
+        // Try to set deadline again - should fail
+        vm.expectRevert(TournamentManager.DeadlineAlreadySet.selector);
+        manager.setDeadlineToSubmitBrackets();
+    }
+    
+    function testCannotDistributePrizesBeforeDeadline() public {
+        // Create a tournament
+        uint256 tournamentId = createTournamentHelper(1 ether, address(0));
+        
+        // Enter tournament with enough participants
+        for (uint256 i = 0; i < 10; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            enterTournamentHelper(
+                participant,
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+        }
+        
+        // Fast forward to after tournament start time
+        (,, uint256 startTime,,,,, ) = manager.getTournament(tournamentId);
+        vm.warp(startTime + 1 hours);
+        
+        // Mock that tournament is over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        
+        // Set deadline
+        manager.setDeadlineToSubmitBrackets();
+        
+        // Fast forward to before deadline (23 hours)
+        vm.warp(block.timestamp + 23 hours);
+        
+        // Try to distribute prizes - should fail
+        vm.expectRevert(TournamentManager.TournamentDeadlineNotMet.selector);
+        manager.distributePrizes(tournamentId);
+    }
+    
+    function testCanDistributePrizesAfterDeadline() public {
+        // Create a tournament
+        uint256 tournamentId = createTournamentHelper(1 ether, address(0));
+        
+        // Enter tournament with enough participants
+        for (uint256 i = 0; i < 10; i++) {
+            address participant = makeAddr(string(abi.encodePacked("participant", i)));
+            
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            
+            enterTournamentHelper(
+                participant,
+                tournamentId,
+                bracketHash,
+                0,
+                "uri"
+            );
+        }
+        
+        // Fast forward to after tournament start time
+        (,, uint256 startTime,,,,, ) = manager.getTournament(tournamentId);
+        vm.warp(startTime + 1 hours);
+        
+        // Mock that tournament is over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+        
+        // Set deadline
+        manager.setDeadlineToSubmitBrackets();
+        
+        // Fast forward to after deadline (25 hours)
+        vm.warp(block.timestamp + 25 hours);
+        
+        // Submit some brackets for scoring to have winners
+        for (uint256 i = 0; i < 5; i++) {
+            uint256 tokenId = i + 1; // Token IDs start from 1
+            
+            uint256[] memory teamIds = new uint256[](4);
+            uint256[] memory winCounts = new uint256[](4);
+            
+            teamIds[0] = 1;
+            teamIds[1] = 2;
+            teamIds[2] = 3;
+            teamIds[3] = 4;
+            
+            winCounts[0] = 6;
+            winCounts[1] = 5;
+            winCounts[2] = 4;
+            winCounts[3] = 3;
+            
+            // Mock bracket tournament mapping
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("bracketTournaments(uint256)", tokenId),
+                abi.encode(tournamentId)
+            );
+            
+            // Mock bracket hash
+            bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("bracketHashes(uint256)", tokenId),
+                abi.encode(bracketHash)
+            );
+            
+            // Mock isScoreSubmitted
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("isScoreSubmitted(uint256)", tokenId),
+                abi.encode(false)
+            );
+            
+            // Mock setIsScoreSubmitted
+            vm.mockCall(
+                address(nft),
+                abi.encodeWithSignature("setIsScoreSubmitted(uint256)", tokenId),
+                abi.encode()
+            );
+            
+            // Mock team wins for scoring
+            for (uint256 j = 1; j <= 4; j++) {
+                vm.mockCall(
+                    address(oracle),
+                    abi.encodeWithSignature("getTeamWins(uint256)", j),
+                    abi.encode(uint8(j)) // Team 1 has 1 win, team 2 has 2 wins, etc.
+                );
+            }
+            
+            // Submit bracket for scoring
+            manager.submitBracketForFinalScoring(tokenId, teamIds, winCounts);
+        }
+        
+        // Distribute prizes - should succeed
+        manager.distributePrizes(tournamentId);
+        
+        // Verify tournament is finalized
+        (,,,,,,, bool isFinalized) = manager.getTournament(tournamentId);
+        assertTrue(isFinalized, "Tournament should be finalized");
+    }
 } 
