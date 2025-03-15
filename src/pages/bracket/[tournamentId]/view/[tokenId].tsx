@@ -1,47 +1,17 @@
 import { type IncomingMessage } from "http";
 import { type GetServerSideProps, type NextPage } from "next";
-import { useEffect, useState } from "react";
 import { defineChain } from "thirdweb";
 import { getContract } from "thirdweb/contract";
 import { tokenURI } from "thirdweb/extensions/erc721";
 import { download } from "thirdweb/storage";
 
-import { Desktop } from "~/components/Bracket/Desktop";
-import { Mobile } from "~/components/Bracket/Mobile";
-import { LoadingOverlay } from "~/components/LoadingOverlay";
 import { APP_NAME, APP_URL, CLIENT, DEFAULT_CHAIN,NFT_ADDRESS } from "~/constants";
-
-const DESKTOP_MIN_WIDTH = 1024; // Minimum width in pixels to show desktop view
+import type { NFTMetadata } from "~/types/bracket";
 
 type ExtendedRequest = IncomingMessage & {
   cookies: Record<string, string | undefined>;
   frameMetadata?: string;
 };
-
-interface NFTMetadata {
-  name: string;
-  data: {
-    name: string;
-    description: string;
-    image: string;
-    external_url: string;
-    attributes: Array<{
-      trait_type: string;
-      value: string | number;
-    }>;
-    picks: Array<{
-      id: number;
-      round: string;
-      topTeam: {
-        id: string;
-      };
-      bottomTeam: {
-        id: string;
-      };
-      winner: string;
-    }>;
-  };
-}
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { tournamentId, tokenId } = context.query;
@@ -118,40 +88,17 @@ interface PageProps {
 }
 
 const ViewTokenBracket: NextPage<PageProps> = ({ tournamentId, tokenId, metadata }) => {
-  const [isDesktop, setIsDesktop] = useState(true);
-
-  useEffect(() => {
-    // Check initial screen size
-    const checkScreenSize = () => {
-      setIsDesktop(window.innerWidth >= DESKTOP_MIN_WIDTH);
-    };
-
-    // Check on mount
-    checkScreenSize();
-
-    // Add resize listener
-    window.addEventListener("resize", checkScreenSize);
-
-    // Cleanup
-    return () => window.removeEventListener("resize", checkScreenSize);
-  }, []);
-
-  if (!tournamentId || !tokenId || !metadata) {
-    return <LoadingOverlay />;
-  }
-
-  // Pass the picks data to the bracket components
-  const bracketProps = {
-    tournamentId,
-    tokenId,
-    picks: metadata.data.picks,
-    readOnly: true, // This ensures the bracket is view-only
-  };
-
-  return isDesktop ? (
-    <Desktop {...bracketProps} />
-  ) : (
-    <Mobile {...bracketProps} />
+  return (
+    <div className="flex flex-col mt-40 px-40">
+      <div className="flex flex-col gap-2">
+        <h3 className="text-2xl font-bold">Token ID</h3>
+        <code>{JSON.stringify(tokenId)}</code>
+        <h3 className="text-2xl font-bold">Tournament ID</h3>
+        <code>{JSON.stringify(tournamentId)}</code>
+        <h3 className="text-2xl font-bold">Metadata</h3>
+        <code>{JSON.stringify(metadata)}</code>
+      </div>
+    </div>
   );
 };
 
