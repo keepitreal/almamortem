@@ -30,17 +30,17 @@ export const CHAINLINK_GAS_LIMIT = 200000;
 
 export const TOURNAMENT_ADDRESS: Record<number, Address> = {
   [base.id]: "0x0000000000000000000000000000000000000000",
-  [baseSepolia.id]: "0x262dC295858B7DB6765310a83E9d93A257C9E1D6",
+  [baseSepolia.id]: "0xb56cA8A6A285979d831704486954Cf3AC2F7cd6B",
 };
 
 export const ORACLE_ADDRESS: Record<number, Address> = {
   [base.id]: "0x0000000000000000000000000000000000000000",
-  [baseSepolia.id]: "0xd43CAeD827706D7a56aDFfD65180D5Cc68a91637",
+  [baseSepolia.id]: "0x8ED73e521b088e52e389ed0d10242D48aE08745a",
 };
 
 export const NFT_ADDRESS: Record<number, Address> = {
   [base.id]: "0x0000000000000000000000000000000000000000",
-  [baseSepolia.id]: "0xc0151ec9FFdEF918Ae7bDA7EED147Fa4C0a10409",
+  [baseSepolia.id]: "0xDF169d697489fB03573dBF897c2D3342D3631837",
 };
 
 export const SEASON = 2024; // 2025

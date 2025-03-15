@@ -393,4 +393,224 @@ contract TournamentManagerTest is Test {
     }
 
     receive() external payable {}
+
+    function testEmergencyRefundFeature() public {
+        // Create a tournament
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
+        
+        // Enter tournament with ETH
+        vm.deal(user1, 1 ether);
+        vm.prank(user1);
+        uint256 tokenId = manager.enterTournament{value: 1 ether}(
+            user1,
+            tournamentId,
+            bytes32(0),
+            0,
+            "uri"
+        );
+        
+        // Verify emergency refund is disabled by default
+        assertEq(manager.emergencyRefundEnabled(), false, "Emergency refund should be disabled by default");
+        
+        // Attempt to refund when feature is disabled should fail
+        vm.prank(user1);
+        vm.expectRevert(TournamentManager.IncompatibleEmergencyRefundState.selector);
+        manager.refundBracket(tokenId);
+        
+        // Enable emergency refund (only owner can do this)
+        vm.prank(address(this)); // Contract is the owner
+        manager.setEmergencyRefundEnabled(true);
+        assertEq(manager.emergencyRefundEnabled(), true, "Emergency refund should be enabled");
+        
+        // Check user1's balance before refund
+        uint256 balanceBefore = user1.balance;
+        
+        // User1 should now be able to claim refund
+        vm.prank(user1);
+        manager.refundBracket(tokenId);
+        
+        // Verify user1 received the full refund
+        assertEq(user1.balance, balanceBefore + 1 ether, "User should receive full entry fee as refund");
+        
+        // Verify token is marked as refunded
+        assertEq(manager.isRefunded(tokenId), true, "Token should be marked as refunded");
+        
+        // Attempting to refund the same token again should fail
+        vm.prank(user1);
+        vm.expectRevert(TournamentManager.BracketAlreadyRefunded.selector);
+        manager.refundBracket(tokenId);
+        
+        // Disable emergency refund
+        vm.prank(address(this));
+        manager.setEmergencyRefundEnabled(false);
+        assertEq(manager.emergencyRefundEnabled(), false, "Emergency refund should be disabled");
+    }
+    
+    function testEmergencyRefundWithERC20() public {
+        // Create a tournament with ERC20 token
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(token), startTime);
+        
+        // Mint tokens to user2
+        token.mint(user2, 2 ether);
+        
+        // Approve tokens for tournament manager
+        vm.prank(user2);
+        token.approve(address(manager), 1 ether);
+        
+        // Enter tournament with ERC20
+        vm.prank(user2);
+        uint256 tokenId = manager.enterTournament(
+            user2,
+            tournamentId,
+            bytes32(0),
+            0,
+            "uri"
+        );
+        
+        // Enable emergency refund
+        vm.prank(address(this));
+        manager.setEmergencyRefundEnabled(true);
+        
+        // Check user2's token balance before refund
+        uint256 balanceBefore = token.balanceOf(user2);
+        
+        // User2 should be able to claim refund
+        vm.prank(user2);
+        manager.refundBracket(tokenId);
+        
+        // Verify user2 received the full token refund
+        assertEq(token.balanceOf(user2), balanceBefore + 1 ether, "User should receive full entry fee as token refund");
+    }
+    
+    function testFinalizeTournamentWithEmergencyRefund() public {
+        // Create a tournament
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
+        
+        // Enable emergency refund
+        manager.setEmergencyRefundEnabled(true);
+        
+        // Attempt to finalize tournament while emergency refund is enabled should fail
+        address[] memory winners = new address[](1);
+        uint256[] memory prizes = new uint256[](1);
+        winners[0] = user1;
+        prizes[0] = 0.9 ether;
+        
+        vm.prank(address(oracle));
+        vm.expectRevert(TournamentManager.IncompatibleEmergencyRefundState.selector);
+        manager.finalizeTournament(tournamentId, winners, prizes);
+    }
+    
+    function testDeveloperFeePayment() public {
+        // Create a tournament
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(0), startTime);
+        
+        // Enter tournament with ETH
+        vm.deal(address(this), 1 ether);
+        manager.enterTournament{value: 1 ether}(
+            user1,
+            tournamentId,
+            bytes32(0),
+            0,
+            "uri"
+        );
+        
+        // Check that developer fee is accrued but not paid yet
+        (,,,,,uint256 devFeeAccrued,) = manager.getTournament(tournamentId);
+        assertEq(devFeeAccrued, 0.1 ether, "Developer fee should be accrued");
+        
+        // Check treasury balance before finalization
+        uint256 treasuryBalanceBefore = treasury.balance;
+        
+        // Set tournament as finalized
+        vm.store(
+            address(manager),
+            bytes32(uint256(5)), // slot of isFinalizedIrl
+            bytes32(uint256(1))  // true
+        );
+        
+        // Finalize tournament
+        address[] memory winners = new address[](1);
+        uint256[] memory prizes = new uint256[](1);
+        winners[0] = user1;
+        prizes[0] = 0.9 ether; // 90% of pool
+        
+        vm.prank(address(oracle));
+        manager.finalizeTournament(tournamentId, winners, prizes);
+        
+        // Verify developer fee was paid to treasury
+        assertEq(treasury.balance, treasuryBalanceBefore + 0.1 ether, "Developer fee should be paid to treasury");
+        
+        // Verify developer fee is reset
+        (,,,,,devFeeAccrued,) = manager.getTournament(tournamentId);
+        assertEq(devFeeAccrued, 0, "Developer fee should be reset after payment");
+    }
+    
+    function testDeveloperFeePaymentWithERC20() public {
+        // Create a tournament with ERC20
+        uint256 startTime = block.timestamp + 1 days;
+        uint256 tournamentId = manager.createTournament(1 ether, address(token), startTime);
+        
+        // Mint tokens to user
+        token.mint(user1, 1 ether);
+        
+        // Approve tokens for tournament manager
+        vm.prank(user1);
+        token.approve(address(manager), 1 ether);
+        
+        // Enter tournament with ERC20
+        vm.prank(user1);
+        manager.enterTournament(
+            user1,
+            tournamentId,
+            bytes32(0),
+            0,
+            "uri"
+        );
+        
+        // Check that developer fee is accrued but not paid yet
+        (,,,,,uint256 devFeeAccrued,) = manager.getTournament(tournamentId);
+        assertEq(devFeeAccrued, 0.1 ether, "Developer fee should be accrued");
+        
+        // Check treasury token balance before finalization
+        uint256 treasuryBalanceBefore = token.balanceOf(treasury);
+        
+        // Set tournament as finalized
+        vm.store(
+            address(manager),
+            bytes32(uint256(5)), // slot of isFinalizedIrl
+            bytes32(uint256(1))  // true
+        );
+        
+        // Finalize tournament
+        address[] memory winners = new address[](1);
+        uint256[] memory prizes = new uint256[](1);
+        winners[0] = user1;
+        prizes[0] = 0.9 ether; // 90% of pool
+        
+        vm.prank(address(oracle));
+        manager.finalizeTournament(tournamentId, winners, prizes);
+        
+        // Verify developer fee was paid to treasury
+        assertEq(token.balanceOf(treasury), treasuryBalanceBefore + 0.1 ether, "Developer fee should be paid to treasury");
+        
+        // Verify developer fee is reset
+        (,,,,,devFeeAccrued,) = manager.getTournament(tournamentId);
+        assertEq(devFeeAccrued, 0, "Developer fee should be reset after payment");
+    }
+    
+    function testOnlyOwnerCanSetEmergencyRefund() public {
+        // Non-owner should not be able to enable emergency refund
+        vm.prank(user1);
+        vm.expectRevert(); // Will revert with Ownable error
+        manager.setEmergencyRefundEnabled(true);
+        
+        // Owner should be able to enable emergency refund
+        vm.prank(address(this)); // Contract is the owner
+        manager.setEmergencyRefundEnabled(true);
+        assertEq(manager.emergencyRefundEnabled(), true, "Emergency refund should be enabled");
+    }
 } 

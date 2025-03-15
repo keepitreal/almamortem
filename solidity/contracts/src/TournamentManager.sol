@@ -33,6 +33,9 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     error InvalidTeamId();
     error TeamIdsWinCountsLengthMismatch();
     error MismatchedHash();
+    error IncompatibleEmergencyRefundState();
+    error BracketAlreadyRefunded();
+    error RefundFailed();
 
     // Structs
     struct Tournament {
@@ -41,6 +44,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         uint256 startTime;
         uint256 prizePool;
         uint256 totalEntries;
+        uint256 developerFeeAccrued; // Track developer fee separately
         address[] winners;         // Ordered list of winners (max 3)
     }
 
@@ -55,6 +59,10 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     mapping(uint256 => Tournament) public tournaments;
     uint256 public nextTournamentId;
     bool public isFinalizedIrl;
+
+    // In the event of a catastrophic event, we can enable emergency refunds for all players
+    bool public emergencyRefundEnabled;
+    mapping(uint256 tokenId => bool isRefunded) public isRefunded;
 
     // Modifiers
     modifier onlyGameScoreOracle() {
@@ -79,6 +87,8 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         address[] winners,
         uint256[] prizes
     );
+    event EmergencyRefundEnabledStateChange(bool enabled);
+    event DeveloperFeePaid(uint256 indexed tournamentId, uint256 amount);
 
     constructor(address _bracketNFT, address _treasury, address _gameScoreOracle) Ownable(msg.sender) {
         if (_bracketNFT == address(0)) revert InvalidNFTAddress();
@@ -104,6 +114,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
             startTime: startTime,
             prizePool: 0,
             totalEntries: 0,
+            developerFeeAccrued: 0,
             winners: new address[](0)
         });
 
@@ -133,8 +144,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
             if (msg.value != tournament.entryFee) revert IncorrectETHAmount();
             uint256 devFee = (msg.value * DEVELOPER_FEE) / 10000;
             tournament.prizePool += msg.value - devFee;
-            (bool success, ) = developerTreasury.call{value: devFee}("");
-            if (!success) revert DevFeeTransferFailed();
+            tournament.developerFeeAccrued += devFee;
         } else {
             if (msg.value != 0) revert ETHNotAccepted();
             uint256 beforeBalance = IERC20(tournament.paymentToken).balanceOf(address(this));
@@ -146,7 +156,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
             uint256 received = IERC20(tournament.paymentToken).balanceOf(address(this)) - beforeBalance;
             uint256 devFee = (received * DEVELOPER_FEE) / 10000;
             tournament.prizePool += received - devFee;
-            IERC20(tournament.paymentToken).safeTransfer(developerTreasury, devFee);
+            tournament.developerFeeAccrued += devFee;
         }
 
         // Mint bracket NFT
@@ -175,6 +185,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         address[] calldata winners,
         uint256[] calldata prizes
     ) external onlyGameScoreOracle {
+        if (emergencyRefundEnabled) revert IncompatibleEmergencyRefundState();
         Tournament storage tournament = tournaments[tournamentId];
         
         if (!isFinalizedIrl) revert TournamentNotEnded();
@@ -199,6 +210,18 @@ contract TournamentManager is Ownable, ReentrancyGuard {
             }
         }
 
+        // Now that the tournament is finalized, pay out the developer fee
+        if (tournament.developerFeeAccrued > 0) {
+            if (tournament.paymentToken == address(0)) {
+                (bool success, ) = developerTreasury.call{value: tournament.developerFeeAccrued}("");
+                if (!success) revert DevFeeTransferFailed();
+            } else {
+                IERC20(tournament.paymentToken).safeTransfer(developerTreasury, tournament.developerFeeAccrued);
+            }
+            emit DeveloperFeePaid(tournamentId, tournament.developerFeeAccrued);
+            tournament.developerFeeAccrued = 0;
+        }
+
         emit TournamentFinalized(tournamentId, winners, prizes);
     }
 
@@ -209,6 +232,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         uint256 startTime,
         uint256 prizePool,
         uint256 totalEntries,
+        uint256 developerFeeAccrued,
         address[] memory winners
     ) {
         Tournament storage tournament = tournaments[tournamentId];
@@ -218,6 +242,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
             tournament.startTime,
             tournament.prizePool,
             tournament.totalEntries,
+            tournament.developerFeeAccrued,
             tournament.winners
         );
     }
@@ -275,6 +300,36 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         }
 
         return score;
+    }
+
+    function refundBracket(uint256 tokenId) external nonReentrant {
+        if (!emergencyRefundEnabled) revert IncompatibleEmergencyRefundState();
+        if (isRefunded[tokenId]) revert BracketAlreadyRefunded();
+        isRefunded[tokenId] = true;
+        
+        address owner = BracketNFT(BRACKET_NFT).ownerOf(tokenId);
+        uint256 tournamentId = BracketNFT(BRACKET_NFT).bracketTournaments(tokenId);
+        Tournament storage tournament = tournaments[tournamentId];
+        
+        // Refund the full entry fee
+        if (tournament.paymentToken == address(0)) {
+            (bool success, ) = owner.call{value: tournament.entryFee}("");
+            if (!success) revert RefundFailed();
+        } else {
+            IERC20(tournament.paymentToken).safeTransfer(owner, tournament.entryFee);
+        }
+        
+        // Adjust the prize pool and developer fee to account for the refund
+        uint256 devFee = (tournament.entryFee * DEVELOPER_FEE) / 10000;
+        uint256 prizeAmount = tournament.entryFee - devFee;
+        
+        tournament.prizePool -= prizeAmount;
+        tournament.developerFeeAccrued -= devFee;
+    }
+
+    function setEmergencyRefundEnabled(bool enabled) external onlyOwner {
+        emergencyRefundEnabled = enabled;
+        emit EmergencyRefundEnabledStateChange(enabled);
     }
 
     // Receive function to accept ETH
