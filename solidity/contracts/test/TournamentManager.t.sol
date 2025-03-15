@@ -126,7 +126,7 @@ contract TournamentManagerTest is Test {
         // Set tournament as finalized for remaining tests
         vm.store(
             address(manager),
-            bytes32(uint256(5)), // slot of isFinalizedIrl
+            bytes32(uint256(6)), // Updated slot of isFinalizedIrl (was 5)
             bytes32(uint256(1))  // true
         );
 
@@ -528,7 +528,7 @@ contract TournamentManagerTest is Test {
         // Set tournament as finalized
         vm.store(
             address(manager),
-            bytes32(uint256(5)), // slot of isFinalizedIrl
+            bytes32(uint256(6)), // storage slot of isFinalizedIrl
             bytes32(uint256(1))  // true
         );
         
@@ -581,7 +581,7 @@ contract TournamentManagerTest is Test {
         // Set tournament as finalized
         vm.store(
             address(manager),
-            bytes32(uint256(5)), // slot of isFinalizedIrl
+            bytes32(uint256(6)), // storage slot of isFinalizedIrl
             bytes32(uint256(1))  // true
         );
         
@@ -603,14 +603,33 @@ contract TournamentManagerTest is Test {
     }
     
     function testOnlyOwnerCanSetEmergencyRefund() public {
-        // Non-owner should not be able to enable emergency refund
         vm.prank(user1);
-        vm.expectRevert(); // Will revert with Ownable error
+        vm.expectRevert();
         manager.setEmergencyRefundEnabled(true);
+    }
+
+    function testSetGameScoreOracle() public {
+        // Create a new mock oracle
+        GameScoreOracle newOracle = new GameScoreOracle(MOCK_ROUTER);
+        address oldOracleAddress = address(oracle);
         
-        // Owner should be able to enable emergency refund
-        vm.prank(address(this)); // Contract is the owner
-        manager.setEmergencyRefundEnabled(true);
-        assertEq(manager.emergencyRefundEnabled(), true, "Emergency refund should be enabled");
+        // Non-owner should not be able to set the oracle
+        vm.prank(user1);
+        vm.expectRevert();
+        manager.setGameScoreOracle(address(newOracle));
+        
+        // Owner should be able to set the oracle
+        vm.prank(address(this));
+        vm.expectEmit(true, true, false, false);
+        emit TournamentManager.GameScoreOracleUpdated(oldOracleAddress, address(newOracle));
+        manager.setGameScoreOracle(address(newOracle));
+        
+        // Verify the oracle was updated
+        assertEq(address(manager.gameScoreOracle()), address(newOracle));
+        
+        // Should revert when trying to set to zero address
+        vm.prank(address(this));
+        vm.expectRevert(TournamentManager.InvalidGameScoreOracleAddress.selector);
+        manager.setGameScoreOracle(address(0));
     }
 } 

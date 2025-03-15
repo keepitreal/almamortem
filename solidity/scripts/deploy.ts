@@ -125,14 +125,31 @@ async function main() {
   // check if the automatically fetch team wins is enabled
   if (isAutomaticallyFetchingTeamWins) {
     console.log("Fetching team wins...\n");
-    // call the fetchTeamWins function
-    await gameScoreOracle.fetchTeamWins(
-      [],
-      CHAINLINK_SUBSCRIPTION_ID[chainId.toString() as keyof typeof CHAINLINK_SUBSCRIPTION_ID],
-      AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.gasLimit,
-      AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.jobId,
-    );
-    console.log("Team wins fetched\n");
+    try {
+      // call the fetchTeamWins function
+      await gameScoreOracle.fetchTeamWins(
+        [],
+        CHAINLINK_SUBSCRIPTION_ID[chainId.toString() as keyof typeof CHAINLINK_SUBSCRIPTION_ID],
+        AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.gasLimit,
+        AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.jobId,
+      );
+      console.log("Team wins fetched\n");
+    } catch (e) {
+      console.log("Error fetching team wins, waiting 5 seconds before retrying...\n", e);
+      await delay(5000); // wait 5 seconds
+      try {
+        // call the fetchTeamWins function
+        await gameScoreOracle.fetchTeamWins(
+          [],
+          CHAINLINK_SUBSCRIPTION_ID[chainId.toString() as keyof typeof CHAINLINK_SUBSCRIPTION_ID],
+          AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.gasLimit,
+          AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.jobId,
+        );
+        console.log("Team wins fetched\n");
+      } catch (e) {
+        console.log(`${RED}Error fetching team wins, giving up...\n${RESET}`, e);
+      }
+    }
   }
 
   const tournamentManagerArgs = [
@@ -206,7 +223,7 @@ async function main() {
         });
         console.log(`Successfully verified ${contract.name} at address: ${GREEN}${contract.address}${RESET}\n`);
       } catch (e) {
-        console.log("Error verifying contract, giving up...\n", e);
+        console.log(`${RED}Error verifying contract, giving up...\n${RESET}`, e);
       }
     }
   }
