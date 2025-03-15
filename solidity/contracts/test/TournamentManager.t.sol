@@ -6,16 +6,8 @@ import {TournamentManager} from "../src/TournamentManager.sol";
 import {BracketNFT} from "../src/BracketNFT.sol";
 import {GameScoreOracle} from "../src/GameScoreOracle.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-
-contract MockERC20 is ERC20 {
-    constructor() ERC20("Mock Token", "MTK") {}
-    
-    function mint(address to, uint256 amount) external {
-        _mint(to, amount);
-    }
-}
+import {MockERC20} from "./MockERC20.sol";
 
 string constant SAMPLE_DATA = "000c2001520026100296002b100422004d1007f1009630098400992009c200e4300ef100f5100f8200fb10100101091010d201481014d401643087810888108ca208cd10901109a9109b3109cd50a493";
 
@@ -703,7 +695,6 @@ contract TournamentManagerTest is Test, IERC721Receiver {
         
         // Submit scores for all participants to ensure they're ranked
         for (uint256 i = 0; i < 10; i++) {
-            address participant = makeAddr(string(abi.encodePacked("participant", i)));
             uint256 tokenId = i + 1; // Token IDs start at 1
             
             // Mock the bracket tournament mapping
