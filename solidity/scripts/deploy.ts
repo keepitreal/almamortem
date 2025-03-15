@@ -5,7 +5,7 @@ const RESET = "\x1b[0m";
 const GREEN = "\x1b[32m";
 const RED = "\x1b[31m";
 
-const DURATION_BEFORE_TOURNAMENT_STARTS = 3600; // 1 hour
+const DURATION_BEFORE_TOURNAMENT_STARTS = 600; // 10 minutes
 // TURN THIS OFF ON PRODUCTION DEPLOYS
 const CREATE_TOURNAMENT_ON_DEPLOY = {
   enabled: true,
