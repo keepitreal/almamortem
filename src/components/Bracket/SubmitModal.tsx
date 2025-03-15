@@ -51,7 +51,7 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
       (counts, pick) => {
         const winnerId = pick.winner;
         if (winnerId) {
-          counts[winnerId] = (counts[winnerId] || 0) + 1;
+          counts[winnerId] = (counts[winnerId] ?? 0) + 1;
         }
         return counts;
       },

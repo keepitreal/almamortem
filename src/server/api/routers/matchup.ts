@@ -4,6 +4,7 @@ import {
   SEASON,
 } from "~/constants";
 import { EVENT_PROGRESSION_2025 } from "~/constants";
+import { generateTeamId } from "~/helpers/generateTeamId";
 import { redis } from "~/lib/redis";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import type { Matchup, Region } from "~/types/bracket";
@@ -167,161 +168,181 @@ const EVENT_PROGRESSION: Record<string, string> =
   SEASON === 2024 ? EVENT_PROGRESSION_2024 : EVENT_PROGRESSION_2025;
 const DATES = SEASON === 2024 ? SEASON_DATES_2024 : SEASON_DATES_2025;
 
-export const matchupRouter = createTRPCRouter({
-  getAll: publicProcedure.query(async (): Promise<Matchup[]> => {
-    // Try to get cached data with DATES-specific key
-    const cacheKey = `espn-matchups-${DATES}`;
-    const cachedData = await redis.get<Matchup[]>(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
+export async function getMatchups(): Promise<{ matchupsWithPotentialSeeds: Matchup[], espnTeamIdToDerivedTeamId: Record<string, string> }> {
+  // Try to get cached data with DATES-specific key
+  const cacheKey = `espn-matchups-${DATES}`;
+  const cachedData = await redis.get<{ matchupsWithPotentialSeeds: Matchup[], espnTeamIdToDerivedTeamId: Record<string, string> }>(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
 
-    const response = await fetch(
-      `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${DATES}`,
+  const response = await fetch(
+    `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${DATES}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch matchups: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as ESPNResponse;
+  const events = data.events ?? [];
+
+  const espnTeamIdToDerivedTeamId: Record<string, string> = {};
+  const allTeams = await getAllTeams();
+
+  // Filter out games that are not in the main tournament
+  const mainTournamentEvents = events.filter((event) => {
+    const competition = event.competitions[0];
+    if (!competition?.notes?.length) return false;
+    const note = competition.notes[0]?.headline ?? "";
+
+    // Check if the note indicates this is a tournament game
+    // Look for "Men's Basketball Championship" in the headline
+    return (
+      note.includes("Men's Basketball Championship") &&
+      !note.includes("First Four")
+    );
+  });
+
+  // Map the events to our Matchup type with proper nextMatchupId
+  const matchups = mainTournamentEvents.map((event): Matchup => {
+    const competition = event.competitions[0] ?? {
+      notes: [],
+      competitors: [],
+      startDate: "",
+      broadcast: "",
+    };
+    const note = competition.notes[0]?.headline ?? "";
+    const region = determineRegionFromNote(note) ?? "South";
+    const round = determineRoundFromNote(note) ?? "Round of 64";
+
+    // Get the next event ID from our mapping
+    const nextEventId = event.id ? EVENT_PROGRESSION[event.id] : null;
+
+    const homeTeamCompetitor = competition.competitors.find(
+      (c) => c.homeAway === "home",
+    );
+    const awayTeamCompetitor = competition.competitors.find(
+      (c) => c.homeAway === "away",
+    );
+    const homeTeam = allTeams.find(
+      (t) => t.id === homeTeamCompetitor?.team.id,
+    );
+    const awayTeam = allTeams.find(
+      (t) => t.id === awayTeamCompetitor?.team.id,
     );
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch matchups: ${response.statusText}`);
+    // Determine position based on the event's position within its round-region group
+    const eventsInRoundRegion = mainTournamentEvents.filter((e) => {
+      const eNote = e.competitions[0]?.notes[0]?.headline ?? "";
+      const eRegion = determineRegionFromNote(eNote) ?? "South";
+      const eRound = determineRoundFromNote(eNote) ?? "Round of 64";
+      return eRegion === region && eRound === round;
+    });
+    const position =
+      eventsInRoundRegion.indexOf(event) % 2 === 0 ? "top" : "bottom";
+
+    const matchupId = parseInt(event.id, 10);
+
+    // Format the date and time from startDate
+    const startDate = competition.startDate
+      ? new Date(competition.startDate)
+      : new Date();
+    const formattedDate = startDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+    const formattedTime = startDate.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+
+    const derivedHomeTeamId = generateTeamId(region, homeTeamCompetitor?.curatedRank.current ?? 16);
+    const espnHomeTeamId = homeTeamCompetitor?.team.id;
+    const derivedAwayTeamId = generateTeamId(region, awayTeamCompetitor?.curatedRank.current ?? 16);
+    const espnAwayTeamId = awayTeamCompetitor?.team.id;
+
+    if (espnHomeTeamId && !espnTeamIdToDerivedTeamId[espnHomeTeamId]) {
+      espnTeamIdToDerivedTeamId[espnHomeTeamId] = derivedHomeTeamId.toString();
     }
 
-    const data = (await response.json()) as ESPNResponse;
-    const events = data.events ?? [];
+    if (espnAwayTeamId && !espnTeamIdToDerivedTeamId[espnAwayTeamId]) {
+      espnTeamIdToDerivedTeamId[espnAwayTeamId] = derivedAwayTeamId.toString();
+    }
 
-    const allTeams = await getAllTeams();
+    return {
+      id: matchupId,
+      round,
+      region,
+      nextMatchupId: nextEventId ? parseInt(nextEventId, 10) : null,
+      position,
+      previousMatchupIds: [], // We'll fill this in after creating the map
+      topTeam: homeTeam
+        ? {
+            id: derivedHomeTeamId.toString(),
+            name: homeTeam.name,
+            mascot: homeTeam.mascot,
+            seed: homeTeamCompetitor?.curatedRank.current ?? 16,
+            region,
+            record: "0-0",
+            ppg: 0,
+            oppg: 0,
+            logoUrl: homeTeam.logoUrl,
+          }
+        : null,
+      bottomTeam: awayTeam
+        ? {
+            id: derivedAwayTeamId.toString(),
+            name: awayTeam.name,
+            mascot: awayTeam.mascot,
+            seed: awayTeamCompetitor?.curatedRank.current ?? 16,
+            region,
+            record: "0-0",
+            ppg: 0,
+            oppg: 0,
+            logoUrl: awayTeam.logoUrl,
+          }
+        : null,
+      date: formattedDate,
+      time: formattedTime,
+      network: competition.broadcast || "",
+    };
+  });
 
-    // Filter out games that are not in the main tournament
-    const mainTournamentEvents = events.filter((event) => {
-      const competition = event.competitions[0];
-      if (!competition?.notes?.length) return false;
-      const note = competition.notes[0]?.headline ?? "";
+  // Create a map of nextMatchupId to previous matchup IDs
+  const previousMatchupsMap = new Map<number, number[]>();
 
-      // Check if the note indicates this is a tournament game
-      // Look for "Men's Basketball Championship" in the headline
-      return (
-        note.includes("Men's Basketball Championship") &&
-        !note.includes("First Four")
-      );
-    });
+  // Build the map in O(n) time
+  matchups.forEach((matchup) => {
+    if (matchup.nextMatchupId !== null) {
+      const prev = previousMatchupsMap.get(matchup.nextMatchupId) ?? [];
+      prev.push(matchup.id);
+      previousMatchupsMap.set(matchup.nextMatchupId, prev);
+    }
+  });
 
-    // Map the events to our Matchup type with proper nextMatchupId
-    const matchups = mainTournamentEvents.map((event): Matchup => {
-      const competition = event.competitions[0] ?? {
-        notes: [],
-        competitors: [],
-        startDate: "",
-        broadcast: "",
-      };
-      const note = competition.notes[0]?.headline ?? "";
-      const region = determineRegionFromNote(note) ?? "South";
-      const round = determineRoundFromNote(note) ?? "Round of 64";
+  // Fill in previousMatchupIds in O(n) time
+  const finalMatchups = matchups.map((matchup) => ({
+    ...matchup,
+    previousMatchupIds: previousMatchupsMap.get(matchup.id) ?? [],
+  }));
 
-      // Get the next event ID from our mapping
-      const nextEventId = event.id ? EVENT_PROGRESSION[event.id] : null;
+  // Add potentialSeeds to each matchup
+  const matchupsWithPotentialSeeds =
+    addPotentialSeedsToMatchups(finalMatchups);
 
-      const homeTeamCompetitor = competition.competitors.find(
-        (c) => c.homeAway === "home",
-      );
-      const awayTeamCompetitor = competition.competitors.find(
-        (c) => c.homeAway === "away",
-      );
-      const homeTeam = allTeams.find(
-        (t) => t.id === homeTeamCompetitor?.team.id,
-      );
-      const awayTeam = allTeams.find(
-        (t) => t.id === awayTeamCompetitor?.team.id,
-      );
+  // Cache the results for 5 minutes with the DATES-specific key
+  await redis.set(cacheKey, matchupsWithPotentialSeeds, {
+    ex: 300, // 5 minutes in seconds
+  });
 
-      // Determine position based on the event's position within its round-region group
-      const eventsInRoundRegion = mainTournamentEvents.filter((e) => {
-        const eNote = e.competitions[0]?.notes[0]?.headline ?? "";
-        const eRegion = determineRegionFromNote(eNote) ?? "South";
-        const eRound = determineRoundFromNote(eNote) ?? "Round of 64";
-        return eRegion === region && eRound === round;
-      });
-      const position =
-        eventsInRoundRegion.indexOf(event) % 2 === 0 ? "top" : "bottom";
+  return { matchupsWithPotentialSeeds, espnTeamIdToDerivedTeamId };
+}
 
-      const matchupId = parseInt(event.id, 10);
-
-      // Format the date and time from startDate
-      const startDate = competition.startDate
-        ? new Date(competition.startDate)
-        : new Date();
-      const formattedDate = startDate.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-      const formattedTime = startDate.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      });
-
-      return {
-        id: matchupId,
-        round,
-        region,
-        nextMatchupId: nextEventId ? parseInt(nextEventId, 10) : null,
-        position,
-        previousMatchupIds: [], // We'll fill this in after creating the map
-        topTeam: homeTeam
-          ? {
-              id: homeTeam.id,
-              name: homeTeam.name,
-              mascot: homeTeam.mascot,
-              seed: homeTeamCompetitor?.curatedRank.current ?? 16,
-              region,
-              record: "0-0",
-              ppg: 0,
-              oppg: 0,
-              logoUrl: homeTeam.logoUrl,
-            }
-          : null,
-        bottomTeam: awayTeam
-          ? {
-              id: awayTeam.id,
-              name: awayTeam.name,
-              mascot: awayTeam.mascot,
-              seed: awayTeamCompetitor?.curatedRank.current ?? 16,
-              region,
-              record: "0-0",
-              ppg: 0,
-              oppg: 0,
-              logoUrl: awayTeam.logoUrl,
-            }
-          : null,
-        date: formattedDate,
-        time: formattedTime,
-        network: competition.broadcast || "",
-      };
-    });
-
-    // Create a map of nextMatchupId to previous matchup IDs
-    const previousMatchupsMap = new Map<number, number[]>();
-
-    // Build the map in O(n) time
-    matchups.forEach((matchup) => {
-      if (matchup.nextMatchupId !== null) {
-        const prev = previousMatchupsMap.get(matchup.nextMatchupId) ?? [];
-        prev.push(matchup.id);
-        previousMatchupsMap.set(matchup.nextMatchupId, prev);
-      }
-    });
-
-    // Fill in previousMatchupIds in O(n) time
-    const finalMatchups = matchups.map((matchup) => ({
-      ...matchup,
-      previousMatchupIds: previousMatchupsMap.get(matchup.id) ?? [],
-    }));
-
-    // Add potentialSeeds to each matchup
-    const matchupsWithPotentialSeeds =
-      addPotentialSeedsToMatchups(finalMatchups);
-
-    // Cache the results for 5 minutes with the DATES-specific key
-    await redis.set(cacheKey, matchupsWithPotentialSeeds, {
-      ex: 300, // 5 minutes in seconds
-    });
-
+export const matchupRouter = createTRPCRouter({
+  getAll: publicProcedure.query(async (): Promise<Matchup[]> => {
+    const { matchupsWithPotentialSeeds } = await getMatchups();
+    console.log({ matchupsWithPotentialSeedsLength: matchupsWithPotentialSeeds.length })
     return matchupsWithPotentialSeeds;
   }),
 });
