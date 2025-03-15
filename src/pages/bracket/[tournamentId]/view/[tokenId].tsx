@@ -44,9 +44,9 @@ interface NFTMetadata {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { tournamentId, id } = context.query;
+  const { tournamentId, tokenId } = context.query;
   
-  if (typeof tournamentId !== 'string' || typeof id !== 'string') {
+  if (typeof tournamentId !== 'string' || typeof tokenId !== 'string') {
     return { notFound: true };
   }
 
@@ -61,7 +61,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // Get the token URI from the contract
     const tokenUri = await tokenURI({
       contract,
-      tokenId: BigInt(id),
+      tokenId: BigInt(tokenId),
      });
 
     if (!tokenUri) {
@@ -86,7 +86,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         action: {
           type: 'launch_frame',
           name: APP_NAME,
-          url: `${APP_URL}/bracket/${tournamentId}/token/${id}`,
+          url: `${APP_URL}/bracket/${tournamentId}/view/${tokenId}`,
           splashImageUrl: `${APP_URL}/images/icon.png`,
           splashBackgroundColor: '#fafafa',
         }
@@ -101,7 +101,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return {
       props: {
         tournamentId,
-        tokenId: id,
+        tokenId,
         metadata,
       }
     };
