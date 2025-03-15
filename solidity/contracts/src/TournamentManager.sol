@@ -52,7 +52,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     uint256 public constant DEVELOPER_FEE = 1000;  // 10% (basis points)
     uint256 public constant MAX_WINNERS = 3;       // Configurable number of winners
     address public immutable BRACKET_NFT;
-    GameScoreOracle public immutable GAME_SCORE_ORACLE;
+    GameScoreOracle public gameScoreOracle;
     address public developerTreasury;
 
     // State variables
@@ -66,7 +66,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
 
     // Modifiers
     modifier onlyGameScoreOracle() {
-        if (msg.sender != address(GAME_SCORE_ORACLE)) revert OnlyGameScoreOracle();
+        if (msg.sender != address(gameScoreOracle)) revert OnlyGameScoreOracle();
         _;
     }
 
@@ -87,6 +87,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         address[] winners,
         uint256[] prizes
     );
+    event GameScoreOracleUpdated(address indexed oldGameScoreOracle, address indexed newGameScoreOracle);
     event EmergencyRefundEnabledStateChange(bool enabled);
     event DeveloperFeePaid(uint256 indexed tournamentId, uint256 amount);
 
@@ -96,7 +97,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         if (_gameScoreOracle == address(0)) revert InvalidGameScoreOracleAddress();
         BRACKET_NFT = _bracketNFT;
         developerTreasury = _treasury;
-        GAME_SCORE_ORACLE = GameScoreOracle(_gameScoreOracle);
+        gameScoreOracle = GameScoreOracle(_gameScoreOracle);
     }
 
     // Tournament Management Functions
@@ -177,7 +178,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
 
     function checkIfTournamentEndedIrl() external view returns (bool) {
         // Calls the gamescore oracle to check if the tournament has ended
-        return GameScoreOracle(GAME_SCORE_ORACLE).isTournamentOver();
+        return GameScoreOracle(gameScoreOracle).isTournamentOver();
     }
 
     function finalizeTournament(
@@ -285,7 +286,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         // Calculate score based on standard scoring formula
         uint256 score = 0;
         for (uint256 i = 0; i < teamIds.length; i++) {
-            uint8 actualWins = GameScoreOracle(GAME_SCORE_ORACLE).getTeamWins(teamIds[i]);
+            uint8 actualWins = GameScoreOracle(gameScoreOracle).getTeamWins(teamIds[i]);
             // For each actual win up to the predicted number, add points based on the round
             for (uint8 win = 1; win <= actualWins && win <= winCounts[i]; win++) {
                 // Points = 2^round where round starts at 1
@@ -330,6 +331,14 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     function setEmergencyRefundEnabled(bool enabled) external onlyOwner {
         emergencyRefundEnabled = enabled;
         emit EmergencyRefundEnabledStateChange(enabled);
+    }
+
+    // In the event something goes wrong with the ESPN API, we can set a new game score oracle
+    function setGameScoreOracle(address _gameScoreOracle) external onlyOwner {
+        if (_gameScoreOracle == address(0)) revert InvalidGameScoreOracleAddress();
+        address oldGameScoreOracle = address(gameScoreOracle);
+        gameScoreOracle = GameScoreOracle(_gameScoreOracle);
+        emit GameScoreOracleUpdated(oldGameScoreOracle, _gameScoreOracle);
     }
 
     // Receive function to accept ETH
