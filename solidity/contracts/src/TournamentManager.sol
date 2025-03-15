@@ -416,23 +416,35 @@ contract TournamentManager is Ownable, ReentrancyGuard {
             return (winnerTokenIds, prizeAmounts, totalWinners);
         }
         
-        // Calculate prize distribution using a weighted approach
-        // The weights follow a linear distribution where:
-        // - 1st place gets numWinners weight
-        // - 2nd place gets numWinners-1 weight
+        // Calculate prize distribution using an exponential approach
+        // The weights follow an exponential distribution where:
+        // - 1st place gets 2^(n-1) weight
+        // - 2nd place gets 2^(n-2) weight
         // - ...
-        // - Last place gets 1 weight
+        // - Last place gets 2^0 = 1 weight
         
-        uint256 totalWeight = (totalWinners * (totalWinners + 1)) / 2;
+        uint256 totalWeight = 0;
+        uint256[] memory weights = new uint256[](totalWinners);
+        
+        // Calculate weights and total weight
+        for (uint256 i = 0; i < totalWinners; i++) {
+            // Calculate 2^(totalWinners-1-i)
+            // For example, with 3 winners:
+            // 1st place: 2^2 = 4
+            // 2nd place: 2^1 = 2
+            // 3rd place: 2^0 = 1
+            weights[i] = 1 << (totalWinners - 1 - i);
+            totalWeight += weights[i];
+        }
+        
         uint256 prizePool = tournament.prizePool;
         
         // Calculate prize amounts for each winner
         for (uint256 i = 0; i < totalWinners; i++) {
             winnerTokenIds[i] = sortedTokenIds[i];
             
-            // Calculate prize amount based on rank weight
-            uint256 weight = totalWinners - i;
-            prizeAmounts[i] = (prizePool * weight) / totalWeight;
+            // Calculate prize amount based on exponential weight
+            prizeAmounts[i] = (prizePool * weights[i]) / totalWeight;
         }
         
         return (winnerTokenIds, prizeAmounts, totalWinners);
