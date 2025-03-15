@@ -7,6 +7,7 @@ import {BracketNFT} from "../src/BracketNFT.sol";
 import {GameScoreOracle} from "../src/GameScoreOracle.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 contract MockERC20 is ERC20 {
     constructor() ERC20("Mock Token", "MTK") {}
@@ -18,7 +19,7 @@ contract MockERC20 is ERC20 {
 
 string constant SAMPLE_DATA = "000c2001520026100296002b100422004d1007f1009630098400992009c200e4300ef100f5100f8200fb10100101091010d201481014d401643087810888108ca208cd10901109a9109b3109cd50a493";
 
-contract TournamentManagerTest is Test {
+contract TournamentManagerTest is Test, IERC721Receiver {
     TournamentManager public manager;
     BracketNFT public nft;
     GameScoreOracle public oracle;
@@ -28,6 +29,15 @@ contract TournamentManagerTest is Test {
     address public user1;
     address public user2;
     address public constant MOCK_ROUTER = address(1); // Mock Chainlink Functions Router
+    
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external pure returns (bytes4) {
+        return IERC721Receiver.onERC721Received.selector;
+    }
     
     function setUp() public {
         // Deploy mock contracts and set up test environment
@@ -622,7 +632,15 @@ contract TournamentManagerTest is Test {
     function testSubmitBracketForFinalScoring() public {
         // Create tournament and enter it
         uint256 tournamentId = createTournamentHelper(0.1 ether, address(0));
-        uint256 tokenId = enterTournamentHelper(user1, tournamentId, bytes32(0), 0, "uri");
+
+        // Create bracket data
+        uint256[] memory teamIds = new uint256[](4);
+        uint256[] memory winCounts = new uint256[](4);
+        teamIds[0] = 1; teamIds[1] = 2; teamIds[2] = 3; teamIds[3] = 4;
+        winCounts[0] = 6; winCounts[1] = 5; winCounts[2] = 4; winCounts[3] = 3;
+        bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+        
+        uint256 tokenId = enterTournamentHelper(user1, tournamentId, bracketHash, 0, "uri");
 
         // Set tournament as not over yet
         vm.mockCall(
@@ -633,7 +651,7 @@ contract TournamentManagerTest is Test {
 
         // Try to submit when tournament is not over
         vm.expectRevert(TournamentManager.TournamentNotEnded.selector);
-        manager.submitBracketForFinalScoring(tokenId);
+        manager.submitBracketForFinalScoring(tokenId, teamIds, winCounts);
 
         // Set tournament as over
         vm.mockCall(
@@ -643,20 +661,28 @@ contract TournamentManagerTest is Test {
         );
 
         // Submit bracket for scoring
-        manager.submitBracketForFinalScoring(tokenId);
+        manager.submitBracketForFinalScoring(tokenId, teamIds, winCounts);
 
         // Verify bracket is marked as scored
         assertTrue(nft.isScoreSubmitted(tokenId));
 
         // Try to submit again
         vm.expectRevert(TournamentManager.BracketAlreadyScored.selector);
-        manager.submitBracketForFinalScoring(tokenId);
+        manager.submitBracketForFinalScoring(tokenId, teamIds, winCounts);
     }
 
     function testSubmitBracketForFinalScoringEmergencyRefund() public {
         // Create tournament and enter it
         uint256 tournamentId = createTournamentHelper(0.1 ether, address(0));
-        uint256 tokenId = enterTournamentHelper(user1, tournamentId, bytes32(0), 0, "uri");
+
+        // Create bracket data
+        uint256[] memory teamIds = new uint256[](4);
+        uint256[] memory winCounts = new uint256[](4);
+        teamIds[0] = 1; teamIds[1] = 2; teamIds[2] = 3; teamIds[3] = 4;
+        winCounts[0] = 6; winCounts[1] = 5; winCounts[2] = 4; winCounts[3] = 3;
+        bytes32 bracketHash = keccak256(abi.encode(teamIds, winCounts));
+        
+        uint256 tokenId = enterTournamentHelper(user1, tournamentId, bracketHash, 0, "uri");
 
         // Enable emergency refund
         vm.prank(manager.owner());
@@ -671,7 +697,77 @@ contract TournamentManagerTest is Test {
 
         // Try to submit when emergency refund is enabled
         vm.expectRevert(TournamentManager.IncompatibleEmergencyRefundState.selector);
-        manager.submitBracketForFinalScoring(tokenId);
+        manager.submitBracketForFinalScoring(tokenId, teamIds, winCounts);
+    }
+
+    function testSubmitBracketForFinalScoringOrder() public {
+        // Create tournament
+        uint256 tournamentId = createTournamentHelper(0.1 ether, address(0));
+
+        // Create bracket data for highest score (Team 1 is champion)
+        uint256[] memory teamIds1 = new uint256[](4);
+        uint256[] memory winCounts1 = new uint256[](4);
+        teamIds1[0] = 1; teamIds1[1] = 2; teamIds1[2] = 3; teamIds1[3] = 4;
+        winCounts1[0] = 6; winCounts1[1] = 5; winCounts1[2] = 4; winCounts1[3] = 3;
+        bytes32 bracketHash1 = keccak256(abi.encode(teamIds1, winCounts1));
+        uint256 tokenId1 = enterTournamentHelper(user1, tournamentId, bracketHash1, 0, "uri1");
+
+        // Create bracket data for medium score (Team 2 is champion)
+        uint256[] memory teamIds2 = new uint256[](4);
+        uint256[] memory winCounts2 = new uint256[](4);
+        teamIds2[0] = 1; teamIds2[1] = 2; teamIds2[2] = 3; teamIds2[3] = 4;
+        winCounts2[0] = 4; winCounts2[1] = 6; winCounts2[2] = 5; winCounts2[3] = 3;
+        bytes32 bracketHash2 = keccak256(abi.encode(teamIds2, winCounts2));
+        uint256 tokenId2 = enterTournamentHelper(user2, tournamentId, bracketHash2, 0, "uri2");
+
+        // Create bracket data for lowest score (Team 3 is champion)
+        uint256[] memory teamIds3 = new uint256[](4);
+        uint256[] memory winCounts3 = new uint256[](4);
+        teamIds3[0] = 1; teamIds3[1] = 2; teamIds3[2] = 3; teamIds3[3] = 4;
+        winCounts3[0] = 3; winCounts3[1] = 4; winCounts3[2] = 6; winCounts3[3] = 5;
+        bytes32 bracketHash3 = keccak256(abi.encode(teamIds3, winCounts3));
+        uint256 tokenId3 = enterTournamentHelper(address(this), tournamentId, bracketHash3, 0, "uri3");
+
+        // Mock tournament as over
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSignature("isTournamentOver()"),
+            abi.encode(true)
+        );
+
+        // Mock oracle responses for team wins - all teams get their predicted wins
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSelector(GameScoreOracle.getTeamWins.selector, uint256(1)),
+            abi.encode(uint8(6))  // Perfect for bracket 1
+        );
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSelector(GameScoreOracle.getTeamWins.selector, uint256(2)),
+            abi.encode(uint8(4))  // Medium for bracket 2
+        );
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSelector(GameScoreOracle.getTeamWins.selector, uint256(3)),
+            abi.encode(uint8(2))  // Low for bracket 3
+        );
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSelector(GameScoreOracle.getTeamWins.selector, uint256(4)),
+            abi.encode(uint8(1))
+        );
+
+        // Submit brackets in random order
+        manager.submitBracketForFinalScoring(tokenId2, teamIds2, winCounts2);
+        manager.submitBracketForFinalScoring(tokenId3, teamIds3, winCounts3);
+        manager.submitBracketForFinalScoring(tokenId1, teamIds1, winCounts1);
+
+        // Get winners array using the view function
+        uint256[] memory winners = manager.getTournamentWinners(tournamentId);
+        assertEq(winners.length, 3, "Should have 3 winners");
+        assertEq(winners[0], tokenId1, "Highest score should be first");
+        assertEq(winners[1], tokenId2, "Medium score should be second");
+        assertEq(winners[2], tokenId3, "Lowest score should be last");
     }
 
     // Helper functions

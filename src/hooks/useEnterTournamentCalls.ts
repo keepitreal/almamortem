@@ -8,7 +8,7 @@ import { useBracket } from "~/context/BracketContext";
 import {
   enterTournament,
   getTournament,
-} from "~/thirdweb/84532/0xc86fe09b4c9ef65b0180f60610d29a9f096310f1";
+} from "~/thirdweb/84532/0x136548e2e4a9be1efb2e3e72e14afbbe829029b0";
 import { getBracketHash } from "~/utils/bracketHash";
 
 type Call = {

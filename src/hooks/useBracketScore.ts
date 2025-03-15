@@ -3,7 +3,7 @@ import { defineChain, getContract } from 'thirdweb';
 
 import { CLIENT, DEFAULT_CHAIN, TOURNAMENT_ADDRESS } from '~/constants';
 import { useBracket } from '~/context/BracketContext';
-import { scoreBracket } from '~/thirdweb/84532/0xc86fe09b4c9ef65b0180f60610d29a9f096310f1';
+import { scoreBracket } from '~/thirdweb/84532/0x136548e2e4a9be1efb2e3e72e14afbbe829029b0';
 import { type UserMatchup } from '~/types/bracket';
 import { getBracketVerificationArrays } from '~/utils/bracketHash';
 
