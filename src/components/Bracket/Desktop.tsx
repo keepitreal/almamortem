@@ -41,8 +41,6 @@ interface DesktopProps {
 
 export const Desktop: FC<DesktopProps> = ({ tournamentId, readOnly = false }) => {
   const { userPicks, setWinner, regionPairs, isLoading } = useBracket();
-  console.log("Desktop: userPicks", userPicks);
-  console.log("Desktop: regionPairs", regionPairs);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleTeamSelect = (matchupId: number, team: Team) => {
