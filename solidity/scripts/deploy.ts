@@ -1,5 +1,6 @@
 import hre from "hardhat";
 import { TournamentManager, BracketNFT, GameScoreOracle } from "../typechain-types";
+import { enterTournamentWithTesters } from "../utils/enterTournamentWithTesters";
 // Colour codes for terminal prints
 const RESET = "\x1b[0m";
 const GREEN = "\x1b[32m";
@@ -19,6 +20,14 @@ const AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY = {
   enabled: true,
   jobId: "0x66756e2d626173652d7365706f6c69612d310000000000000000000000000000",
   gasLimit: 200000n,
+}
+
+// TURN THIS OFF ON PRODUCTION DEPLOYS
+const automaticallyEnterTournament = true;
+const AUTOMATICALLY_ENTER_TOURNAMENT_ON_DEPLOY = {
+  // create must be enabled to enter the tournament
+  enabled: !CREATE_TOURNAMENT_ON_DEPLOY.enabled ? false : automaticallyEnterTournament,
+  numEntries: 50,
 }
 
 function delay(ms: number) {
@@ -196,6 +205,20 @@ async function main() {
   console.log(
     "Waiting 30 seconds before beginning the contract verification to allow the block explorer to index the contract...\n",
   );
+
+  const isAutomaticallyEnteringTournament = AUTOMATICALLY_ENTER_TOURNAMENT_ON_DEPLOY.enabled;
+  const automaticallyEnterTournamentColor = isAutomaticallyEnteringTournament ? GREEN : RED;
+  console.log("Automatically enter tournament on deploy enabled: " + `${automaticallyEnterTournamentColor}${isAutomaticallyEnteringTournament}${RESET}`);
+  if (isAutomaticallyEnteringTournament) {
+    console.log("Entering tournament on deploy...\n");
+    await enterTournamentWithTesters(
+      tournamentManager,
+      0,
+      AUTOMATICALLY_ENTER_TOURNAMENT_ON_DEPLOY.numEntries,
+    );
+  }
+
+
   await delay(30000); // Wait for 30 seconds before verifying the contracts
 
   for (const contract of contractsToVerify) {
