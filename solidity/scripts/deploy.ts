@@ -27,7 +27,7 @@ const automaticallyEnterTournament = true;
 const AUTOMATICALLY_ENTER_TOURNAMENT_ON_DEPLOY = {
   // create must be enabled to enter the tournament
   enabled: !CREATE_TOURNAMENT_ON_DEPLOY.enabled ? false : automaticallyEnterTournament,
-  numEntries: 100,
+  numEntries: 10,
 }
 
 function delay(ms: number) {
