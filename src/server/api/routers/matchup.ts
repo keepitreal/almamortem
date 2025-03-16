@@ -295,6 +295,7 @@ export async function getMatchups(): Promise<{
       topTeam: homeTeam
         ? {
             id: derivedHomeTeamId.toString(),
+            espnId: espnHomeTeamId,
             name: homeTeam.name,
             mascot: homeTeam.mascot,
             seed: homeTeamCompetitor?.curatedRank.current ?? 16,
@@ -308,6 +309,7 @@ export async function getMatchups(): Promise<{
       bottomTeam: awayTeam
         ? {
             id: derivedAwayTeamId.toString(),
+            espnId: espnAwayTeamId,
             name: awayTeam.name,
             mascot: awayTeam.mascot,
             seed: awayTeamCompetitor?.curatedRank.current ?? 16,

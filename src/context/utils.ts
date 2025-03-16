@@ -1,4 +1,5 @@
 import { INITIAL_SEED_PAIRS, RANDOM_ROUND_OF_64 } from "~/constants";
+import { generateTeamId } from "~/helpers/generateTeamId";
 import type { Matchup, Team, UserMatchup } from "~/types/bracket";
 
 export const getSortedRegionalR64Matchups = (
@@ -152,8 +153,16 @@ export const initializeUserPicks = (
           previousMatchupIds: matchup.previousMatchupIds,
           potentialSeeds: matchup.potentialSeeds,
           position: matchup.position,
-          topTeam,
-          bottomTeam,
+          topTeam: {
+            ...topTeam,
+            id: generateTeamId(topTeam.region, topTeam.seed).toString(),
+            espnId: topTeam.espnId,
+          },
+          bottomTeam: {
+            ...bottomTeam,
+            id: generateTeamId(bottomTeam.region, bottomTeam.seed).toString(),
+            espnId: bottomTeam.espnId,
+          },
           winner: null,
           date: matchup.date,
           time: matchup.time,
@@ -167,8 +176,18 @@ export const initializeUserPicks = (
           region: matchup.region,
           nextMatchupId: matchup.nextMatchupId,
           position: matchup.position,
-          topTeam: matchup.topTeam,
-          bottomTeam: matchup.bottomTeam,
+          // @ts-expect-error - TODO: fix this
+          topTeam: {
+            ...matchup.topTeam,
+            id: generateTeamId(matchup.topTeam?.region ?? "Midwest", matchup.topTeam?.seed ?? 0).toString(),
+            espnId: matchup.topTeam?.espnId,
+          },
+          // @ts-expect-error - TODO: fix this
+          bottomTeam: {
+            ...matchup.bottomTeam,
+            id: generateTeamId(matchup.bottomTeam?.region ?? "Midwest", matchup.bottomTeam?.seed ?? 0).toString(),
+            espnId: matchup.bottomTeam?.espnId,
+          },
           potentialSeeds: matchup.potentialSeeds,
           winner: null,
           date: matchup.date,

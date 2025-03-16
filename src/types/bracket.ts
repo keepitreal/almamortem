@@ -17,6 +17,7 @@ export type Region =
 
 export interface Team {
   id: string;
+  espnId?: string;
   name: string;
   mascot: string;
   seed: number;
