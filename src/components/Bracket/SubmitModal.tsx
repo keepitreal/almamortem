@@ -3,7 +3,7 @@ import {
   TransactionButton,
 } from "@coinbase/onchainkit/transaction";
 import { type LifecycleStatus } from "@coinbase/onchainkit/transaction";
-import { type FC, useCallback, useMemo, useState } from "react";
+import { type FC, useCallback, useState } from "react";
 import { toast } from "react-toastify";
 import { upload } from "thirdweb/storage";
 import { useAccount } from "wagmi";
@@ -24,7 +24,6 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
   const { address, isConnected } = useAccount();
   const [isUploading, setIsUploading] = useState(false);
   const [ipfsUri, setIpfsUri] = useState<string | null>(null);
-  const [toastShown, setToastShown] = useState(false);
 
   // calls will not generate without an ipfsUri
   const { calls } = useEnterTournamentCalls({
