@@ -174,13 +174,13 @@ export async function getMatchups(): Promise<{
 }> {
   // Try to get cached data with DATES-specific key
   const cacheKey = `espn-matchups-${DATES}-v2`;
-  const cachedData = await redis.get<{
-    matchupsWithPotentialSeeds: Matchup[];
-    espnTeamIdToDerivedTeamId: Record<string, string>;
-  }>(cacheKey);
-  if (cachedData) {
-    return cachedData;
-  }
+  // const cachedData = await redis.get<{
+  //   matchupsWithPotentialSeeds: Matchup[];
+  //   espnTeamIdToDerivedTeamId: Record<string, string>;
+  // }>(cacheKey);
+  // if (cachedData) {
+  //   return cachedData;
+  // }
 
   const response = await fetch(
     `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${DATES}`,
@@ -295,6 +295,7 @@ export async function getMatchups(): Promise<{
       topTeam: homeTeam
         ? {
             id: derivedHomeTeamId.toString(),
+            espnId: homeTeamCompetitor?.team.id,
             name: homeTeam.name,
             mascot: homeTeam.mascot,
             seed: homeTeamCompetitor?.curatedRank.current ?? 16,
@@ -308,6 +309,7 @@ export async function getMatchups(): Promise<{
       bottomTeam: awayTeam
         ? {
             id: derivedAwayTeamId.toString(),
+            espnId: awayTeamCompetitor?.team.id,
             name: awayTeam.name,
             mascot: awayTeam.mascot,
             seed: awayTeamCompetitor?.curatedRank.current ?? 16,

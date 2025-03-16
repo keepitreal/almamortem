@@ -35,7 +35,16 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
   const teams = useTeams();
 
   const onStatusChange = (status: LifecycleStatus) => {
-    // console.log(status);
+    // if (status.statusName === "success") {
+    //   if (!toastShown) {
+    //     toast.success("Bracket submitted successfully");
+    //     setToastShown(true);
+    //   }
+    //   // close the modal
+    //   document.getElementById(modalId)?.click();
+    //   // reset the toastShown state
+    //   setToastShown(false);
+    // }
   };
 
   // handle modal open will upload NFT data to IPFS.

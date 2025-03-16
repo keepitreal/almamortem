@@ -17,6 +17,7 @@ export type Region =
 
 export interface Team {
   id: string;
+  espnId?: string;
   name: string;
   mascot: string;
   seed: number;
@@ -72,3 +73,30 @@ export const regionToUniversityNamesDemo = {
   midwest: "purdue",
   south: "ncstate",
 };
+
+export interface NFTPick {
+  id: number;
+  round: string;
+  topTeam: {
+    id: string;
+  };
+  bottomTeam: {
+    id: string;
+  };
+  winner: string;
+}
+
+export interface NFTMetadata {
+  name: string;
+  data: {
+    name: string;
+    description: string;
+    image: string;
+    external_url: string;
+    attributes: Array<{
+      trait_type: string;
+      value: string | number;
+    }>;
+    picks: NFTPick[];
+  };
+}

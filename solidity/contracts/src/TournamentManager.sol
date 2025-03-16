@@ -575,7 +575,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
     function setDeadlineToSubmitBrackets() external {
         if (deadlineToSubmitBrackets != 0) revert DeadlineAlreadySet();
         if (!GameScoreOracle(gameScoreOracle).isTournamentOver()) revert TournamentNotEnded();
-        deadlineToSubmitBrackets = block.timestamp + 24 hours;
+        deadlineToSubmitBrackets = block.timestamp + 15 minutes;
         emit DeadlineToSubmitBracketsUpdated(deadlineToSubmitBrackets);
     }
 
