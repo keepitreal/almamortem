@@ -82,6 +82,7 @@ export async function getAllTeams(): Promise<Team[]> {
 
     return {
       id: team.id,
+      espnId: team.id,
       name: team.location,
       mascot: team.name,
       seed,

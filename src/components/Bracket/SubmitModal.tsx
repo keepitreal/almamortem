@@ -35,7 +35,6 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
   const teams = useTeams();
 
   const onStatusChange = (status: LifecycleStatus) => {
-    console.log({status});
     // if (status.statusName === "success") {
     //   if (!toastShown) {
     //     toast.success("Bracket submitted successfully");
