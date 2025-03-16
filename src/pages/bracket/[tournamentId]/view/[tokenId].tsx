@@ -5,7 +5,9 @@ import { getContract } from "thirdweb/contract";
 import { tokenURI } from "thirdweb/extensions/erc721";
 import { download } from "thirdweb/storage";
 
-import { APP_NAME, APP_URL, CLIENT, DEFAULT_CHAIN,NFT_ADDRESS } from "~/constants";
+import { NFTDesktop } from "~/components/Bracket/NFTDesktop";
+import { APP_NAME, APP_URL, CLIENT, DEFAULT_CHAIN, NFT_ADDRESS } from "~/constants";
+import { NFTBracketProvider } from "~/context/NFTBracketContext";
 import type { NFTMetadata } from "~/types/bracket";
 
 type ExtendedRequest = IncomingMessage & {
@@ -89,16 +91,12 @@ interface PageProps {
 
 const ViewTokenBracket: NextPage<PageProps> = ({ tournamentId, tokenId, metadata }) => {
   return (
-    <div className="flex flex-col mt-40 px-40">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-2xl font-bold">Token ID</h3>
-        <code>{JSON.stringify(tokenId)}</code>
-        <h3 className="text-2xl font-bold">Tournament ID</h3>
-        <code>{JSON.stringify(tournamentId)}</code>
-        <h3 className="text-2xl font-bold">Metadata</h3>
-        <code>{JSON.stringify(metadata)}</code>
+    <NFTBracketProvider metadata={metadata}>
+      <div className="flex flex-col">
+        <h1 className="text-center text-3xl font-bold mt-8 mb-4">{metadata.data.name}</h1>
+        <NFTDesktop tournamentId={tournamentId} />
       </div>
-    </div>
+    </NFTBracketProvider>
   );
 };
 

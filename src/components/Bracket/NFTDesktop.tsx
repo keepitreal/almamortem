@@ -4,10 +4,9 @@ import { useState } from "react";
 import { LoadingOverlay } from "~/components/LoadingOverlay";
 import { Overview } from "~/components/Overview";
 import { ROUND_NAMES } from "~/constants";
-import { useBracket } from "~/context/BracketContext";
+import { useNFTBracket } from "~/context/NFTBracketContext";
 import type { Team } from "~/types/bracket";
 
-import { Controls } from "./Controls";
 import { FinalRounds } from "./FinalRounds";
 import { RegionalBracket } from "./RegionalBracket";
 
@@ -34,24 +33,18 @@ const MATCHUP_HEIGHT = {
   Championship: 480,
 } as const;
 
-interface DesktopProps {
+interface NFTDesktopProps {
   tournamentId: string;
-  readOnly?: boolean;
 }
 
-export const Desktop: FC<DesktopProps> = ({ tournamentId, readOnly = false }) => {
-  const { userPicks, setWinner, regionPairs, isLoading } = useBracket();
+export const NFTDesktop: FC<NFTDesktopProps> = ({ tournamentId }) => {
+  const { userPicks, setWinner, regionPairs, isLoading } = useNFTBracket();
+  console.log("NFTDesktop: userPicks", userPicks);
+  console.log("NFTDesktop: regionPairs", regionPairs);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleTeamSelect = (matchupId: number, team: Team) => {
-    if (readOnly) return; // Don't allow team selection in read-only mode
-    
-    setIsSaving(true);
-    setWinner(matchupId, team.id);
-
-    setTimeout(() => {
-      setIsSaving(false);
-    }, 1000);
+    // No-op in read-only mode
   };
 
   // Get all Final Four matchups
@@ -79,8 +72,14 @@ export const Desktop: FC<DesktopProps> = ({ tournamentId, readOnly = false }) =>
     (matchup) => matchup.round === "Championship",
   );
 
-  if (!leftSideFinalFour || !rightSideFinalFour || !championshipMatchup) {
-    return <div>Error: Missing required matchups</div>;
+  // Check if regionPairs are empty
+  const hasEmptyRegionPairs = regionPairs[0].length === 0 || regionPairs[1].length === 0;
+  if (hasEmptyRegionPairs) {
+    console.error("Empty region pairs detected:", regionPairs);
+  }
+
+  if (!leftSideFinalFour || !rightSideFinalFour || !championshipMatchup || hasEmptyRegionPairs) {
+    return <LoadingOverlay />
   }
 
   return (
@@ -143,8 +142,7 @@ export const Desktop: FC<DesktopProps> = ({ tournamentId, readOnly = false }) =>
             </div>
           </div>
         </div>
-        {!readOnly && <Controls isSaving={isSaving} tournamentId={Number(tournamentId)} />}
       </div>
     </div>
   );
-};
+}; 
