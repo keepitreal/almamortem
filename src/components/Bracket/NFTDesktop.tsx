@@ -79,17 +79,7 @@ export const NFTDesktop: FC<NFTDesktopProps> = ({ tournamentId }) => {
   }
 
   if (!leftSideFinalFour || !rightSideFinalFour || !championshipMatchup || hasEmptyRegionPairs) {
-    return <div className="p-8 text-center">
-      <h2 className="text-xl font-bold mb-4">Loading bracket data...</h2>
-      <p>If this message persists, there might be an issue with the bracket data.</p>
-      <p className="mt-4">Debug info:</p>
-      <p>User Picks: {userPicks.length}</p>
-      <p>Final Four Matchups: {finalFourMatchups.length}</p>
-      <p>Region Pairs: {JSON.stringify(regionPairs)}</p>
-      <p>Left Side Final Four: {leftSideFinalFour ? "Found" : "Missing"}</p>
-      <p>Right Side Final Four: {rightSideFinalFour ? "Found" : "Missing"}</p>
-      <p>Championship: {championshipMatchup ? "Found" : "Missing"}</p>
-    </div>;
+    return <LoadingOverlay />
   }
 
   return (
