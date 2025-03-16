@@ -23,13 +23,13 @@ type Props = {
 
 const transports = SUPPORTED_CHAINS.reduce((acc, chain) => {
   acc[chain.id] = http(
-    `http://${chain.id}.rpc.thirdweb.com/${env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`
+    `https://${chain.id}.rpc.thirdweb.com/${env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`
   )
   return acc;
 }, {} as Record<number, Transport>);
 
 // Create wagmi config
-const config = createConfig({
+export const config = createConfig({
   chains: SUPPORTED_CHAINS,
   transports,
   connectors: [
