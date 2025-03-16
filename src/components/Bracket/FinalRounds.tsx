@@ -31,7 +31,7 @@ const FinalFourTeam: FC<FinalFourTeamProps> = ({
     style={
       team
         ? {
-            backgroundImage: `url('/images/teams/f4/${team.id}.png')`,
+            backgroundImage: `url('/images/teams/f4/${team.espnId}.png')`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }
@@ -147,7 +147,7 @@ const ChampionshipTeam: FC<ChampionshipTeamProps> = ({
     style={
       team
         ? {
-            backgroundImage: `url('/images/teams/champ/${team.id}.png')`,
+            backgroundImage: `url('/images/teams/champ/${team.espnId}.png')`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             borderLeft: isLeft ? "none" : "2px solid black",
