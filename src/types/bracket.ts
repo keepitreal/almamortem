@@ -20,6 +20,7 @@ export interface Team {
   espnId?: string;
   name: string;
   mascot: string;
+  location: string;
   seed: number;
   region: Region;
   record: string;
@@ -30,8 +31,11 @@ export interface Team {
 
 export interface Matchup {
   id: number;
+  roundId: number;
   topTeam: Team | null;
+  topTeamSeed: number | null;
   bottomTeam: Team | null;
+  bottomTeamSeed: number | null;
   round: RoundName;
   region: Region;
   nextMatchupId: number | null;

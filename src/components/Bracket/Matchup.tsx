@@ -59,7 +59,7 @@ const TeamColumn: React.FC<TeamRowProps> = ({
         {team ? (
           <div className="flex w-full justify-between">
             <div className="flex flex-col items-start bg-primary-content">
-              <span className="text-xs font-bold">{team.name}</span>
+              <span className="text-xs font-bold">{team.location}</span>
               <div className="flex flex-row gap-1">
                 <span className="text-xs">{team.mascot}</span>
                 <span className="text-xs text-base-content/60">

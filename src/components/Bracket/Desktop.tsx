@@ -39,13 +39,16 @@ interface DesktopProps {
   readOnly?: boolean;
 }
 
-export const Desktop: FC<DesktopProps> = ({ tournamentId, readOnly = false }) => {
+export const Desktop: FC<DesktopProps> = ({
+  tournamentId,
+  readOnly = false,
+}) => {
   const { userPicks, setWinner, regionPairs, isLoading } = useBracket();
   const [isSaving, setIsSaving] = useState(false);
 
   const handleTeamSelect = (matchupId: number, team: Team) => {
     if (readOnly) return; // Don't allow team selection in read-only mode
-    
+
     setIsSaving(true);
     setWinner(matchupId, team.id);
 
@@ -83,6 +86,7 @@ export const Desktop: FC<DesktopProps> = ({ tournamentId, readOnly = false }) =>
     return <div>Error: Missing required matchups</div>;
   }
 
+  console.log({ regionPairs });
   return (
     <div className="bg-base-200">
       {isLoading && <LoadingOverlay />}
@@ -143,7 +147,9 @@ export const Desktop: FC<DesktopProps> = ({ tournamentId, readOnly = false }) =>
             </div>
           </div>
         </div>
-        {!readOnly && <Controls isSaving={isSaving} tournamentId={Number(tournamentId)} />}
+        {!readOnly && (
+          <Controls isSaving={isSaving} tournamentId={Number(tournamentId)} />
+        )}
       </div>
     </div>
   );

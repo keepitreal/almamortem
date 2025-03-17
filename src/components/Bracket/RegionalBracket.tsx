@@ -40,6 +40,7 @@ export const RegionalBracket: React.FC<RegionalBracketProps> = ({
     return null;
   }
 
+  console.log({ userPicks });
   // Since we've checked length, we can safely assert these indices exist
   const [round64, round32, sweet16, elite8] = roundNames as [
     RoundName,

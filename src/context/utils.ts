@@ -158,6 +158,9 @@ export const initializeUserPicks = (
           date: matchup.date,
           time: matchup.time,
           network: matchup.network,
+          topTeamSeed: matchup.topTeamSeed,
+          bottomTeamSeed: matchup.bottomTeamSeed,
+          roundId: matchup.roundId,
         });
       } else {
         // Use teams already assigned to the matchup
@@ -175,6 +178,9 @@ export const initializeUserPicks = (
           time: matchup.time,
           network: matchup.network,
           previousMatchupIds: matchup.previousMatchupIds,
+          topTeamSeed: matchup.topTeamSeed,
+          bottomTeamSeed: matchup.bottomTeamSeed,
+          roundId: matchup.roundId,
         });
       }
     });
