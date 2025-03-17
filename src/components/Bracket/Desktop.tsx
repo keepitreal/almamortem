@@ -86,7 +86,6 @@ export const Desktop: FC<DesktopProps> = ({
     return <div>Error: Missing required matchups</div>;
   }
 
-  console.log({ regionPairs });
   return (
     <div className="bg-base-200">
       {isLoading && <LoadingOverlay />}

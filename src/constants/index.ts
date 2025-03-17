@@ -98,6 +98,9 @@ export const TOP_TEAM_BY_SEED_AND_ROUND_ID = {
   },
 };
 
+export const TOP_REGIONS_FOR_FINAL_FOUR = ["South", "East"];
+export const TOP_REGIONS_FOR_CHAMPIONSHIP = ["South", "West"];
+
 export const ROUND_NAMES: RoundName[] = [
   "Round of 64",
   "Round of 32",

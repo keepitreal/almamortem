@@ -104,26 +104,8 @@ export async function getAllTeams(): Promise<Team[]> {
 
 export const teamRouter = createTRPCRouter({
   getAll: publicProcedure.query(async (): Promise<Team[]> => {
-    console.log("Fetching matchups for team mapping...");
-    // const { espnTeamIdToDerivedTeamId } = await getMatchups();
-    // console.log("Team ID mapping:", {
-    //   hasMappings: Boolean(espnTeamIdToDerivedTeamId),
-    //   mappingCount: Object.keys(espnTeamIdToDerivedTeamId || {}).length,
-    // });
-
     const teams = await getAllTeams();
-
     return teams;
-    // return teams.map((team) => {
-    //   const derivedId = espnTeamIdToDerivedTeamId?.[team.id];
-    //   const finalId = derivedId ?? `${team.id}:${team.name}`;
-
-    //   return {
-    //     ...team,
-    //     // prevents teams that are not in the tournament from sharing an id with teams that are in the tournament
-    //     id: finalId,
-    //   };
-    // });
   }),
 
   // Add additional procedures here as needed, for example:

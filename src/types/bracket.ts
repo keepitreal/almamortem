@@ -15,8 +15,10 @@ export type Region =
   | "WestMidwest"
   | "SouthEast";
 
+// 51
+
 export interface Team {
-  id: string;
+  id: number;
   espnId?: string;
   name: string;
   mascot: string;
@@ -48,7 +50,7 @@ export interface Matchup {
 }
 
 export interface UserMatchup extends Matchup {
-  winner: string | null; // Team ID of the winner
+  winner: number | null; // Team ID of the winner
 }
 
 export type MatchupMap = Record<number, Matchup>;

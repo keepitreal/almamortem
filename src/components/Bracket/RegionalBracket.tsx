@@ -1,6 +1,13 @@
 import { Connector } from "~/components/Bracket/Connector";
 import { Matchup as MatchupComponent } from "~/components/Bracket/Matchup";
-import type { RoundName, Team, UserMatchup } from "~/types/bracket";
+import type {
+  RoundName,
+  Team,
+  UserMatchup,
+  Matchup,
+  Region,
+} from "~/types/bracket";
+import { INITIAL_SEED_PAIRS } from "~/constants";
 
 interface RegionalBracketProps {
   region: string;
@@ -40,7 +47,6 @@ export const RegionalBracket: React.FC<RegionalBracketProps> = ({
     return null;
   }
 
-  console.log({ userPicks });
   // Since we've checked length, we can safely assert these indices exist
   const [round64, round32, sweet16, elite8] = roundNames as [
     RoundName,
@@ -179,6 +185,8 @@ const RenderRound: React.FC<RoundProps> = ({
 
   const matchupHeight = matchupHeightByRound[round];
 
+  const sortedMatchups = filterAndSortMatchups(userPicks, round, region);
+
   return (
     <div className="flex flex-col">
       {/* Column Header */}
@@ -190,41 +198,69 @@ const RenderRound: React.FC<RoundProps> = ({
 
       {/* Matchups */}
       <div className="flex flex-col" style={{ gap: `${roundGaps[round]}px` }}>
-        {userPicks
-          .filter(
-            (matchup) => matchup.round === round && matchup.region === region,
-          )
-          .map((matchup) => (
-            <div key={matchup.id}>
-              {shouldRenderConnector && (
-                <Connector
-                  toMatchup={matchup}
-                  fromMatchup={findMatchupById(
-                    matchup.previousMatchupIds?.[0],
-                    userPicks,
-                  )}
-                  isRightSide={isRightSide}
-                />
-              )}
-              <MatchupComponent
-                matchup={matchup}
-                onTeamSelect={(team) => onTeamSelect(matchup.id, team)}
-                width={matchupWidth}
-                height={matchupHeight}
+        {sortedMatchups.map((matchup) => (
+          <div key={matchup.id}>
+            {shouldRenderConnector && (
+              <Connector
+                toMatchup={matchup}
+                fromMatchup={findMatchupById(
+                  matchup.previousMatchupIds?.[0],
+                  userPicks,
+                )}
+                isRightSide={isRightSide}
               />
-              {shouldRenderConnector && (
-                <Connector
-                  toMatchup={matchup}
-                  fromMatchup={findMatchupById(
-                    matchup.previousMatchupIds?.[1],
-                    userPicks,
-                  )}
-                  isRightSide={isRightSide}
-                />
-              )}
-            </div>
-          ))}
+            )}
+            <MatchupComponent
+              matchup={matchup}
+              onTeamSelect={(team) => onTeamSelect(matchup.id, team)}
+              width={matchupWidth}
+              height={matchupHeight}
+            />
+            {shouldRenderConnector && (
+              <Connector
+                toMatchup={matchup}
+                fromMatchup={findMatchupById(
+                  matchup.previousMatchupIds?.[1],
+                  userPicks,
+                )}
+                isRightSide={isRightSide}
+              />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
 };
+
+function filterAndSortMatchups(
+  matchups: Matchup[],
+  round: RoundName,
+  region: string,
+) {
+  const filteredMatchups = matchups.filter(
+    (matchup) => matchup.round === round && matchup.region === region,
+  );
+
+  if (round === "Round of 64") {
+    // Create a map of seed pair index for sorting
+    const seedPairIndexMap = new Map(
+      INITIAL_SEED_PAIRS.map((pair, index) => [
+        JSON.stringify(pair.sort()),
+        index,
+      ]),
+    );
+
+    return filteredMatchups.sort((a, b) => {
+      const aPair = [a.topTeamSeed, a.bottomTeamSeed].sort();
+      const bPair = [b.topTeamSeed, b.bottomTeamSeed].sort();
+
+      const aIndex = seedPairIndexMap.get(JSON.stringify(aPair)) ?? 0;
+      const bIndex = seedPairIndexMap.get(JSON.stringify(bPair)) ?? 0;
+
+      return aIndex - bIndex;
+    });
+  }
+
+  return filteredMatchups;
+}

@@ -9,9 +9,10 @@ interface Matchup {
   nextMatchupId: number | null;
   previousMatchupIds: number[];
   round: number; // 1 = Round of 64, 2 = Round of 32, etc.
-  region: "West" | "East" | "South" | "Midwest";
+  region: "West" | "East" | "South" | "Midwest" | "SouthWest" | "EastMidwest";
   topTeamSeed: number | null;
   bottomTeamSeed: number | null;
+  potentialSeeds: number[];
 }
 
 const REGIONS = ["West", "East", "South", "Midwest"] as const;
@@ -24,6 +25,26 @@ function getFinalFourRegion(
   return "WestMidwest";
 }
 
+// Helper function to get potential seeds for a matchup
+function getPotentialSeeds(
+  matchup: Matchup,
+  matchupsMap: Map<number, Matchup>,
+): number[] {
+  // For Round of 64, return the actual seeds
+  if (matchup.round === 1) {
+    return [matchup.topTeamSeed, matchup.bottomTeamSeed].filter(
+      (seed): seed is number => seed !== null,
+    );
+  }
+
+  // For later rounds, recursively get seeds from previous matchups
+  return matchup.previousMatchupIds
+    .map((id) => matchupsMap.get(id))
+    .filter((m): m is Matchup => m !== undefined)
+    .flatMap((m) => getPotentialSeeds(m, matchupsMap))
+    .sort((a, b) => a - b);
+}
+
 export function generateTournamentBracket(): Matchup[] {
   const matchups: Matchup[] = [];
   let currentId = 1;
@@ -32,16 +53,28 @@ export function generateTournamentBracket(): Matchup[] {
   // We need to do this for each region (4 regions * 8 games = 32 games)
   for (const [regionIndex, region] of REGIONS.entries()) {
     const regionNumber = (regionIndex + 1) as 1 | 2 | 3 | 4;
-    const regionSeeds = TOP_TEAM_BY_SEED_AND_ROUND_ID[regionNumber].TOP;
-    for (const [pairIndex, seedPair] of INITIAL_SEED_PAIRS.entries()) {
+    const topTeamSeedsForRegion =
+      TOP_TEAM_BY_SEED_AND_ROUND_ID[regionNumber].TOP;
+    for (const seedPair of INITIAL_SEED_PAIRS.values()) {
+      const seedA = seedPair[0];
+      const seedB = seedPair[1];
+      const topTeamSeed = topTeamSeedsForRegion.includes(seedA!)
+        ? seedA
+        : seedB;
+      const bottomTeamSeed = topTeamSeedsForRegion.includes(seedA!)
+        ? seedB
+        : seedA;
       matchups.push({
         id: currentId,
         nextMatchupId: null, // We'll fill this in later
         previousMatchupIds: [],
         round: 1,
         region,
-        topTeamSeed: regionSeeds[pairIndex] ?? null,
-        bottomTeamSeed: seedPair[1] ?? null,
+        topTeamSeed: topTeamSeed ?? null,
+        bottomTeamSeed: bottomTeamSeed ?? null,
+        potentialSeeds: [topTeamSeed, bottomTeamSeed].filter(
+          (seed): seed is number => seed !== null,
+        ),
       });
       currentId++;
     }
@@ -67,10 +100,14 @@ export function generateTournamentBracket(): Matchup[] {
         region,
         topTeamSeed: null,
         bottomTeamSeed: null,
+        potentialSeeds: [], // We'll fill this in after connecting matchups
       });
       currentId++;
     }
   }
+
+  // Create a map for easier matchup lookup
+  const matchupsMap = new Map(matchups.map((m) => [m.id, m]));
 
   // Connect matchups by setting nextMatchupId and previousMatchupIds
   for (let round = 1; round <= 5; round++) {
@@ -104,6 +141,12 @@ export function generateTournamentBracket(): Matchup[] {
             region1Matchup.id,
             region2Matchup.id,
           ];
+
+          // Set the region for the Final Four matchup
+          finalFourMatchup.region =
+            `${region1Matchup.region}${region2Matchup.region}` as
+              | "SouthWest"
+              | "EastMidwest";
         }
       });
     } else {
@@ -126,6 +169,13 @@ export function generateTournamentBracket(): Matchup[] {
       }
     }
   }
+
+  // Fill in potential seeds for all matchups after Round of 64
+  matchups
+    .filter((m) => m.round > 1)
+    .forEach((matchup) => {
+      matchup.potentialSeeds = getPotentialSeeds(matchup, matchupsMap);
+    });
 
   return matchups;
 }
