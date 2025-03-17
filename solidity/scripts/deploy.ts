@@ -1,5 +1,5 @@
 import hre from "hardhat";
-import { TournamentManager, BracketNFT, GameScoreOracle } from "../typechain-types";
+import { TournamentManager, BracketNFT, GameScoreOracle, TestScoreOracle } from "../typechain-types";
 import { enterTournamentWithTesters } from "../utils/enterTournamentWithTesters";
 // Colour codes for terminal prints
 const RESET = "\x1b[0m";
@@ -29,6 +29,9 @@ const AUTOMATICALLY_ENTER_TOURNAMENT_ON_DEPLOY = {
   enabled: !CREATE_TOURNAMENT_ON_DEPLOY.enabled ? false : automaticallyEnterTournament,
   numEntries: 10,
 }
+
+// TURN THIS OFF ON PRODUCTION DEPLOYS
+const DEPLOY_TEST_SCORE_ORACLE = true;
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -95,18 +98,24 @@ async function main() {
   });
   console.log("BracketNFT deployed to: " + `${GREEN}${nftAddress}${RESET}\n`);
 
-  const gameScoreOracleArgs = [
+  const gameScoreOracleArgs = DEPLOY_TEST_SCORE_ORACLE ? [deployer.address] : [
     FUNCTIONS_ROUTER[chainId.toString() as keyof typeof FUNCTIONS_ROUTER]
   ];
-  let gameScoreOracle: GameScoreOracle;
-  try {
-    gameScoreOracle = await hre.ethers.deployContract("GameScoreOracle", gameScoreOracleArgs);
+  let gameScoreOracle: GameScoreOracle | TestScoreOracle;
+
+  if (DEPLOY_TEST_SCORE_ORACLE) {
+    gameScoreOracle = await hre.ethers.deployContract("TestScoreOracle", gameScoreOracleArgs);
     await gameScoreOracle.waitForDeployment();
-  } catch (e) {
-    console.log("Error deploying GameScoreOracle contract, waiting 10 seconds before retrying...\n", e);
-    await delay(10000); // wait 10 seconds
-    gameScoreOracle = await hre.ethers.deployContract("GameScoreOracle", gameScoreOracleArgs);
-    await gameScoreOracle.waitForDeployment();
+  } else {
+    try {
+      gameScoreOracle = await hre.ethers.deployContract("GameScoreOracle", gameScoreOracleArgs);
+      await gameScoreOracle.waitForDeployment();
+    } catch (e) {
+      console.log("Error deploying GameScoreOracle contract, waiting 10 seconds before retrying...\n", e);
+      await delay(10000); // wait 10 seconds
+      gameScoreOracle = await hre.ethers.deployContract("GameScoreOracle", gameScoreOracleArgs);
+      await gameScoreOracle.waitForDeployment();
+    }
   }
   const gameScoreOracleAddress = await gameScoreOracle.getAddress();
   contractsToVerify.push({
@@ -116,17 +125,19 @@ async function main() {
   });
   console.log("gameScoreOracle deployed to: " + `${GREEN}${gameScoreOracleAddress}${RESET}\n`);
 
-  // get the contract deployed at the functions subscription registry
-  const functionsSubscriptionRegistry = await hre.ethers.getContractAt(
-    FUNCTION_SUBSCRIPTION_ABI,
-    FUNCTIONS_SUBSCRIPTIONS_REGISTRY[chainId.toString() as keyof typeof FUNCTIONS_SUBSCRIPTIONS_REGISTRY]
-  );
-  // call the addConsumer function
-  await functionsSubscriptionRegistry.addConsumer(
-    FUNCTIONS_SUBSCRIPTION_ID[chainId.toString() as keyof typeof FUNCTIONS_SUBSCRIPTION_ID],
-    gameScoreOracleAddress
-  );
-  console.log("GameScoreOracle added to the Functions Subscription Registry\n");
+  if (!DEPLOY_TEST_SCORE_ORACLE) {
+    // get the contract deployed at the functions subscription registry
+    const functionsSubscriptionRegistry = await hre.ethers.getContractAt(
+      FUNCTION_SUBSCRIPTION_ABI,
+      FUNCTIONS_SUBSCRIPTIONS_REGISTRY[chainId.toString() as keyof typeof FUNCTIONS_SUBSCRIPTIONS_REGISTRY]
+    );
+    // call the addConsumer function
+    await functionsSubscriptionRegistry.addConsumer(
+      FUNCTIONS_SUBSCRIPTION_ID[chainId.toString() as keyof typeof FUNCTIONS_SUBSCRIPTION_ID],
+      gameScoreOracleAddress
+    );
+    console.log("GameScoreOracle added to the Functions Subscription Registry\n");
+  }
 
   const isAutomaticallyFetchingTeamWins = AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.enabled;
   const automaticFetchColor = isAutomaticallyFetchingTeamWins ? GREEN : RED;
@@ -134,18 +145,15 @@ async function main() {
   // check if the automatically fetch team wins is enabled
   if (isAutomaticallyFetchingTeamWins) {
     console.log("Fetching team wins...\n");
-    try {
-      // call the fetchTeamWins function
-      await gameScoreOracle.fetchTeamWins(
-        [],
-        CHAINLINK_SUBSCRIPTION_ID[chainId.toString() as keyof typeof CHAINLINK_SUBSCRIPTION_ID],
-        AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.gasLimit,
-        AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.jobId,
-      );
-      console.log("Team wins fetched\n");
-    } catch (e) {
-      console.log("Error fetching team wins, waiting 5 seconds before retrying...\n", e);
-      await delay(5000); // wait 5 seconds
+    if (DEPLOY_TEST_SCORE_ORACLE) {
+      await (gameScoreOracle as TestScoreOracle).setTeamWins(51, 6);
+      await (gameScoreOracle as TestScoreOracle).setTeamWins(2, 5);
+      await (gameScoreOracle as TestScoreOracle).setTeamWins(9, 4);
+      await (gameScoreOracle as TestScoreOracle).setTeamWins(145, 4);
+      await (gameScoreOracle as TestScoreOracle).setTeamWins(24, 3);
+      await (gameScoreOracle as TestScoreOracle).setTeamWins(155, 3);
+      await (gameScoreOracle as TestScoreOracle).setTeamWins(22, 3);
+    } else {
       try {
         // call the fetchTeamWins function
         await gameScoreOracle.fetchTeamWins(
@@ -156,7 +164,20 @@ async function main() {
         );
         console.log("Team wins fetched\n");
       } catch (e) {
-        console.log(`${RED}Error fetching team wins, giving up...\n${RESET}`, e);
+        console.log("Error fetching team wins, waiting 5 seconds before retrying...\n", e);
+        await delay(5000); // wait 5 seconds
+        try {
+          // call the fetchTeamWins function
+          await gameScoreOracle.fetchTeamWins(
+            [],
+            CHAINLINK_SUBSCRIPTION_ID[chainId.toString() as keyof typeof CHAINLINK_SUBSCRIPTION_ID],
+            AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.gasLimit,
+            AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY.jobId,
+          );
+          console.log("Team wins fetched\n");
+        } catch (e) {
+          console.log(`${RED}Error fetching team wins, giving up...\n${RESET}`, e);
+        }
       }
     }
   }

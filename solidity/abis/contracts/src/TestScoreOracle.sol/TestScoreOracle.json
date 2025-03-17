@@ -1,0 +1,21 @@
+[
+  "constructor(address)",
+  "error OwnableInvalidOwner(address)",
+  "error OwnableUnauthorizedAccount(address)",
+  "event OwnershipTransferred(address indexed,address indexed)",
+  "event TournamentOver(uint256 indexed)",
+  "event WinsUpdateRequested(bytes32 indexed)",
+  "event WinsUpdated(bytes32 indexed)",
+  "function fetchTeamWins(string[],uint64,uint32,bytes32) returns (bytes32)",
+  "function getTeamWins(uint256) view returns (uint8)",
+  "function getTeamWinsBatch(uint256[]) view returns (uint8[])",
+  "function isTournamentOver() view returns (bool)",
+  "function lastUpdateTimestamp() view returns (uint256)",
+  "function owner() view returns (address)",
+  "function renounceOwnership()",
+  "function router() view returns (address)",
+  "function setIsTournamentOver(uint256)",
+  "function setTeamWins(uint256,uint8)",
+  "function teamWins(uint256) view returns (uint8)",
+  "function transferOwnership(address)"
+]
