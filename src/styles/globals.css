@@ -206,6 +206,10 @@ html, body {
   z-index: 10000;
 }
 
+.overview {
+  font-family: 'Inter', sans-serif;
+}
+
 .matchup-team-bg {
   background-color: oklch(var(--pc));
   position: absolute;

@@ -37,7 +37,3 @@ export default function Home() {
     </>
   );
 }
-
-// {address && !sessionData?.user && (
-//   <SignInWithEthereum btnLabel="Sign In To Play" />
-// )}

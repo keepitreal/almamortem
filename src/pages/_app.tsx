@@ -6,6 +6,7 @@ import { SessionProvider } from "next-auth/react";
 import { useEffect } from "react";
 import { ToastContainer } from "react-toastify";
 
+import { StoryModal } from "~/components/StoryModal";
 import Layout from "~/components/utils/Layout";
 import { APP_DESCRIPTION, APP_NAME, APP_URL } from "~/constants";
 import { BracketProvider } from "~/context/BracketContext";
@@ -58,6 +59,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
               <Component {...pageProps} />
               <ToastContainer position="top-center" />
             </Layout>
+            <StoryModal />
             <div id="portal" />
           </BracketProvider>
         </OnchainProviders>

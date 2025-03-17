@@ -1,3 +1,4 @@
+import { CheckmarkCircle } from "~/components/icons/CheckmarkCircle";
 import type { RoundName, Team, UserMatchup } from "~/types/bracket";
 import { ROUND_TO_ROUND_ABBREVIATION } from "~/types/bracket";
 
@@ -51,6 +52,11 @@ const TeamColumn: React.FC<TeamRowProps> = ({
       {team && !isSelected && hasWinner && (
         <div className="absolute inset-0 bg-primary opacity-60" />
       )}
+      {team && isSelected && (
+        <div className="absolute right-2 top-2">
+          <CheckmarkCircle />
+        </div>
+      )}
       <div
         className="matchup-team-bg flex w-full justify-between px-2 py-1"
         style={{
@@ -69,11 +75,6 @@ const TeamColumn: React.FC<TeamRowProps> = ({
                 </span>
               </div>
             </div>
-            {isSelected && (
-              <div className="">
-                <span className="text-lg text-red-500">✔</span>
-              </div>
-            )}
           </div>
         ) : (
           <div className="h-5 w-full bg-base-300/50" />
