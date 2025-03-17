@@ -13,16 +13,14 @@ export const Overview = () => {
           priority
         />
       </div>
-      <p className="text-lg text-gray-800">
-        On March 16th, 2025, the National Coalition for Armament Advancement
-        (NCAA) chose 64 super soldiers developed by universities across America
-        to compete for critical funding from the US Government. Only one of
-        these soldiers will go on to represent the US in battles against rival
-        nations.
-      </p>
       <p className="mt-8 text-lg text-gray-800">
-        For each round in this tournament, choose the fighter that you believe
-        has the best chance to win.
+        For each matchup in this tournament, choose the fighter that you believe
+        has the best chance to win. Monitor your bracket's position in the
+        leaderboard and compete for the Palmer Prize!
+      </p>
+      <p className="mt-8 text-xs text-gray-800">
+        Alma Mortem is an AI art experiment and is not affiliated with any
+        universities or collegiate organizations.
       </p>
     </div>
   );

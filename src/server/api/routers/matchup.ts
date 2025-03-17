@@ -426,6 +426,13 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
 
 export const matchupRouter = createTRPCRouter({
   getAll: publicProcedure.query(async (): Promise<Matchup[]> => {
-    return await getMatchupsRevised();
+    const CACHE_KEY = "matchups";
+    const cachedMatchups = await redis.get<Matchup[]>(CACHE_KEY);
+    if (cachedMatchups) {
+      return cachedMatchups;
+    }
+    const matchups = await getMatchupsRevised();
+    await redis.set(CACHE_KEY, matchups, { ex: 300 }); // Cache for 5 minutes
+    return matchups;
   }),
 });
