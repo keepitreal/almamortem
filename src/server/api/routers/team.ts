@@ -79,9 +79,10 @@ export async function getAllTeams(): Promise<Team[]> {
     const region = regions[regionIndex]!;
 
     return {
-      id: team.id,
+      id: team.id as unknown as number,
       espnId: team.id,
       name: team.location,
+      location: team.location,
       mascot: team.name,
       seed,
       region,
