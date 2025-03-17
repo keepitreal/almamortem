@@ -12,10 +12,8 @@ export type Region =
   | "South"
   | "Midwest"
   | "All"
-  | "WestMidwest"
-  | "SouthEast";
-
-// 51
+  | "SouthWest"
+  | "EastMidwest";
 
 export interface Team {
   id: number;

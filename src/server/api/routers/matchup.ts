@@ -1,8 +1,4 @@
-import {
-  EVENT_PROGRESSION_2025,
-  INITIAL_SEED_PAIRS,
-  ROUND_NAME_BY_ROUND_ID,
-} from "~/constants";
+import { ROUND_NAME_BY_ROUND_ID } from "~/constants";
 import { generateTeamId } from "~/helpers/generateTeamId";
 import { redis } from "~/lib/redis";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
@@ -261,9 +257,10 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
     return {
       ...matchup,
       roundId: matchup.round,
-      round: ROUND_NAME_BY_ROUND_ID[matchup.round],
+      round: ROUND_NAME_BY_ROUND_ID[matchup.round]!,
       topTeamSeed: matchup.topTeamSeed,
       bottomTeamSeed: matchup.bottomTeamSeed,
+      position: "top", // TODO: don't think we use this
       topTeam: topTeamData
         ? {
             id: generateTeamId(matchup.region, matchup.topTeamSeed ?? 16),

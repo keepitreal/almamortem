@@ -57,7 +57,7 @@ export const INITIAL_SEED_PAIRS = [
   [2, 15],
 ];
 
-export const ROUND_NAME_BY_ROUND_ID = {
+export const ROUND_NAME_BY_ROUND_ID: Record<number, RoundName> = {
   1: "Round of 64",
   2: "Round of 32",
   3: "Sweet 16",
