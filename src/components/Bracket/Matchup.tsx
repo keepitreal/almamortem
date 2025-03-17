@@ -115,7 +115,6 @@ export const Matchup: React.FC<MatchupProps> = ({
         isTopTeam
         round={matchup.round}
         hasWinner={!!matchup.winner}
-        isFirstFour={false}
       />
       <TeamColumn
         team={matchup.bottomTeam}
@@ -124,7 +123,6 @@ export const Matchup: React.FC<MatchupProps> = ({
         height={height}
         round={matchup.round}
         hasWinner={!!matchup.winner}
-        isFirstFour={!!matchup.firstFour.length}
       />
     </div>
   );
