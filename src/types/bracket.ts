@@ -27,6 +27,7 @@ export interface Team {
   ppg: number;
   oppg: number;
   logoUrl: string;
+  isFirstFour: boolean;
 }
 
 export interface Matchup {

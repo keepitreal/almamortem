@@ -1,6 +1,6 @@
 import {
-  ROUND_NAME_BY_ROUND_ID,
   FIRST_FOUR_EVENTS_BY_REGION_AND_SEED,
+  ROUND_NAME_BY_ROUND_ID,
 } from "~/constants";
 import { generateTeamId } from "~/helpers/generateTeamId";
 import { redis } from "~/lib/redis";
@@ -157,7 +157,7 @@ export function determineRoundIDFromNote(note: string): number | null {
   return null;
 }
 
-const DATES = "20250317-20250408&groups=50";
+const DATES = "20250318-20250408&groups=50";
 
 async function getMatchupsRevised(): Promise<Matchup[]> {
   // Generate base bracket structure
@@ -305,6 +305,8 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
       ? regionMap?.get(matchup.bottomTeamSeed)
       : null;
 
+    // if (matchup.round === 1) {
+    // }
     // Format date and time if available
     const startDate = topTeamData?.startDate
       ? new Date(topTeamData.startDate)
@@ -317,13 +319,6 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
       hour: "numeric",
       minute: "2-digit",
     });
-
-    if (matchup.region === "Midwest") {
-      console.log({
-        topTeamSeed: matchup.topTeamSeed,
-        bottomTeamSeed: matchup.bottomTeamSeed,
-      });
-    }
 
     const firstFourTeams = bottomTeamIsFirstFour
       ? firstFourTeamMaps.get(matchup.region as Region)?.[
@@ -370,6 +365,7 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
             ppg: 0,
             oppg: 0,
             logoUrl: "",
+            isFirstFour: bottomTeamIsFirstFour,
           },
         )
       : null;
@@ -389,6 +385,7 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
             ppg: 0,
             oppg: 0,
             logoUrl: "",
+            isFirstFour: false,
           }
         : null;
 
@@ -412,6 +409,7 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
             ppg: 0,
             oppg: 0,
             logoUrl: "",
+            isFirstFour: false,
           }
         : null,
       bottomTeam,
