@@ -3,7 +3,7 @@ import { type Address } from "viem";
 import { base, baseSepolia, type Chain } from "wagmi/chains";
 
 import { env } from "~/env";
-import type { RoundName } from "~/types/bracket";
+import type { Region, RoundName } from "~/types/bracket";
 
 export const APP_NAME = "Alma Mortem";
 export const APP_DESCRIPTION = "A tribute to the 2025 NCAA Tournament";
@@ -100,6 +100,26 @@ export const TOP_TEAM_BY_SEED_AND_ROUND_ID = {
 
 export const TOP_REGIONS_FOR_FINAL_FOUR = ["South", "East"];
 export const TOP_REGIONS_FOR_CHAMPIONSHIP = ["South", "West"];
+
+export const FIRST_FOUR_EVENTS_BY_REGION_AND_SEED: Record<
+  Region,
+  Record<number, string>
+> = {
+  South: {
+    16: "SFPA VS ALST",
+    11: "UNC VS SDSU",
+  },
+  East: {
+    16: "MSM VS AMER",
+  },
+  Midwest: {
+    11: "XAV VS TEX",
+  },
+  West: {},
+  All: {},
+  SouthWest: {},
+  EastMidwest: {},
+};
 
 export const ROUND_NAMES: RoundName[] = [
   "Round of 64",

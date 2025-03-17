@@ -1,4 +1,7 @@
-import { ROUND_NAME_BY_ROUND_ID } from "~/constants";
+import {
+  ROUND_NAME_BY_ROUND_ID,
+  FIRST_FOUR_EVENTS_BY_REGION_AND_SEED,
+} from "~/constants";
 import { generateTeamId } from "~/helpers/generateTeamId";
 import { redis } from "~/lib/redis";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
@@ -154,7 +157,7 @@ export function determineRoundIDFromNote(note: string): number | null {
   return null;
 }
 
-const DATES = "20250320-20250408&groups=50";
+const DATES = "20250317-20250408&groups=50";
 
 async function getMatchupsRevised(): Promise<Matchup[]> {
   // Generate base bracket structure
@@ -189,17 +192,73 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
     >
   >();
 
+  const firstFourTeamMaps = new Map<
+    Region,
+    Record<
+      number,
+      {
+        id: string;
+        displayName: string;
+        name: string;
+        mascot: string;
+        location: string;
+      }[]
+    >
+  >();
+
   // Initialize maps for each region
   ["West", "East", "South", "Midwest"].forEach((region) => {
     regionTeamMaps.set(region as Region, new Map());
   });
 
-  const tournamentEvents = events.filter((event) => {
+  const tournamentEventsWithFirstFour = events.filter((event) => {
     const note = event.competitions[0]?.notes[0]?.headline ?? "";
-    return (
-      note.includes("Men's Basketball Championship") &&
-      !note.includes("First Four")
-    );
+    return note.includes("Men's Basketball Championship");
+  });
+
+  const tournamentEvents = tournamentEventsWithFirstFour.filter((event) => {
+    const note = event.competitions[0]?.notes[0]?.headline ?? "";
+    return !note.includes("First Four");
+  });
+
+  const firstFourEvents = tournamentEventsWithFirstFour.filter((event) => {
+    const note = event.competitions[0]?.notes[0]?.headline ?? "";
+    return note.includes("First Four");
+  });
+
+  const firstFourEventsByRegion = firstFourEvents.reduce(
+    (acc, event) => {
+      const note = event.competitions[0]?.notes[0]?.headline ?? "";
+      const region = determineRegionFromNote(note);
+      if (!region) return acc;
+      const events = acc[region] ?? [];
+      acc[region] = [...events, event];
+      return acc;
+    },
+    {} as Record<Region, ESPNEvent[]>,
+  );
+
+  firstFourTeamMaps.set("South", {});
+  firstFourTeamMaps.set("East", {});
+  firstFourTeamMaps.set("West", {});
+  firstFourTeamMaps.set("Midwest", {});
+
+  Object.entries(firstFourEventsByRegion).forEach(([region, events]) => {
+    const regionMap = firstFourTeamMaps.get(region as Region);
+    if (!regionMap) return;
+    events.forEach((event) => {
+      const seed = event.competitions[0]?.competitors[0]?.curatedRank.current;
+      const teams = event.competitions[0]?.competitors.map((competitor) => {
+        return {
+          id: competitor.team.id,
+          displayName: competitor.team.displayName,
+          name: competitor.team.name,
+          mascot: competitor.team.name, // Using team.name as mascot since it's often the mascot name
+          location: competitor.team.location,
+        };
+      });
+      regionMap[seed!] = teams!;
+    });
   });
 
   tournamentEvents.forEach((event) => {
@@ -234,6 +293,11 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
   // Decorate bracket matchups with team data
   return bracketMatchups.map((matchup): Matchup => {
     const regionMap = regionTeamMaps.get(matchup.region);
+    const bottomTeamIsFirstFour =
+      FIRST_FOUR_EVENTS_BY_REGION_AND_SEED[matchup.region as Region][
+        matchup.bottomTeamSeed!
+      ];
+
     const topTeamData = matchup.topTeamSeed
       ? regionMap?.get(matchup.topTeamSeed)
       : null;
@@ -253,6 +317,80 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
       hour: "numeric",
       minute: "2-digit",
     });
+
+    if (matchup.region === "Midwest") {
+      console.log({
+        topTeamSeed: matchup.topTeamSeed,
+        bottomTeamSeed: matchup.bottomTeamSeed,
+      });
+    }
+
+    const firstFourTeams = bottomTeamIsFirstFour
+      ? firstFourTeamMaps.get(matchup.region as Region)?.[
+          matchup.bottomTeamSeed!
+        ]
+      : [];
+
+    const firstFourTeamsWithData = firstFourTeams?.map((team) => {
+      return {
+        ...team,
+        id: generateTeamId(matchup.region, matchup.bottomTeamSeed ?? 16),
+        espnId: team.id,
+        location: team.location,
+        name: team.name,
+        mascot: team.mascot,
+        seed: matchup.bottomTeamSeed ?? 16,
+        region: matchup.region,
+        record: "0-0",
+        ppg: 0,
+        oppg: 0,
+        logoUrl: "",
+      };
+    });
+
+    const firstFourCombinedTeam = firstFourTeamsWithData?.length
+      ? firstFourTeamsWithData.reduce(
+          (acc, team, index) => {
+            return {
+              ...acc,
+              location: index === 0 ? team.location : acc.location,
+              mascot: index === 0 ? acc.location : team.location,
+            };
+          },
+          {
+            id: generateTeamId(matchup.region, matchup.bottomTeamSeed ?? 16),
+            espnId: firstFourTeamsWithData[0]?.espnId ?? "",
+            name: firstFourTeamsWithData[0]?.name ?? "",
+            location: firstFourTeamsWithData[0]?.location ?? "",
+            mascot: firstFourTeamsWithData[0]?.mascot ?? "",
+            displayName: firstFourTeamsWithData[0]?.displayName ?? "",
+            seed: matchup.bottomTeamSeed ?? 16,
+            region: matchup.region,
+            record: "0-0",
+            ppg: 0,
+            oppg: 0,
+            logoUrl: "",
+          },
+        )
+      : null;
+
+    const bottomTeam = bottomTeamIsFirstFour
+      ? firstFourCombinedTeam
+      : bottomTeamData
+        ? {
+            id: generateTeamId(matchup.region, matchup.bottomTeamSeed ?? 16),
+            espnId: bottomTeamData.id,
+            location: bottomTeamData.location,
+            name: bottomTeamData.name,
+            mascot: bottomTeamData.mascot,
+            seed: matchup.bottomTeamSeed ?? 16,
+            region: matchup.region,
+            record: "0-0",
+            ppg: 0,
+            oppg: 0,
+            logoUrl: "",
+          }
+        : null;
 
     return {
       ...matchup,
@@ -276,24 +414,11 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
             logoUrl: "",
           }
         : null,
-      bottomTeam: bottomTeamData
-        ? {
-            id: generateTeamId(matchup.region, matchup.bottomTeamSeed ?? 16),
-            espnId: bottomTeamData.id,
-            location: bottomTeamData.location,
-            name: bottomTeamData.name,
-            mascot: bottomTeamData.mascot,
-            seed: matchup.bottomTeamSeed ?? 16,
-            region: matchup.region,
-            record: "0-0",
-            ppg: 0,
-            oppg: 0,
-            logoUrl: "",
-          }
-        : null,
+      bottomTeam,
       date: formattedDate,
       time: formattedTime,
       network: topTeamData?.broadcast ?? "",
+      firstFour: firstFourTeamsWithData ?? [],
     };
   });
 }
