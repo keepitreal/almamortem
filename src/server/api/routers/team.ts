@@ -90,6 +90,7 @@ export async function getAllTeams(): Promise<Team[]> {
       ppg: 0, // This would need to be fetched from a different endpoint
       oppg: 0, // This would need to be fetched from a different endpoint
       logoUrl: defaultLogo,
+      isFirstFour: false,
     };
   });
 

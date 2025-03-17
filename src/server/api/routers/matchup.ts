@@ -1,11 +1,11 @@
 import {
-  ROUND_NAME_BY_ROUND_ID,
   FIRST_FOUR_EVENTS_BY_REGION_AND_SEED,
+  ROUND_NAME_BY_ROUND_ID,
 } from "~/constants";
 import { generateTeamId } from "~/helpers/generateTeamId";
 import { redis } from "~/lib/redis";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import type { Matchup, Region } from "~/types/bracket";
+import type { Matchup, Region, Team } from "~/types/bracket";
 import { generateTournamentBracket } from "~/utils/generateBracket";
 interface ESPNTeam {
   id: string;
@@ -157,7 +157,7 @@ export function determineRoundIDFromNote(note: string): number | null {
   return null;
 }
 
-const DATES = "20250317-20250408&groups=50";
+const DATES = "20250318-20250408&groups=50";
 
 async function getMatchupsRevised(): Promise<Matchup[]> {
   // Generate base bracket structure
@@ -293,10 +293,11 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
   // Decorate bracket matchups with team data
   return bracketMatchups.map((matchup): Matchup => {
     const regionMap = regionTeamMaps.get(matchup.region);
-    const bottomTeamIsFirstFour =
-      FIRST_FOUR_EVENTS_BY_REGION_AND_SEED[matchup.region as Region][
+    const bottomTeamIsFirstFour = Boolean(
+      FIRST_FOUR_EVENTS_BY_REGION_AND_SEED[matchup.region ?? "South"][
         matchup.bottomTeamSeed!
-      ];
+      ],
+    );
 
     const topTeamData = matchup.topTeamSeed
       ? regionMap?.get(matchup.topTeamSeed)
@@ -305,6 +306,8 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
       ? regionMap?.get(matchup.bottomTeamSeed)
       : null;
 
+    // if (matchup.round === 1) {
+    // }
     // Format date and time if available
     const startDate = topTeamData?.startDate
       ? new Date(topTeamData.startDate)
@@ -317,13 +320,6 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
       hour: "numeric",
       minute: "2-digit",
     });
-
-    if (matchup.region === "Midwest") {
-      console.log({
-        topTeamSeed: matchup.topTeamSeed,
-        bottomTeamSeed: matchup.bottomTeamSeed,
-      });
-    }
 
     const firstFourTeams = bottomTeamIsFirstFour
       ? firstFourTeamMaps.get(matchup.region as Region)?.[
@@ -345,16 +341,18 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
         ppg: 0,
         oppg: 0,
         logoUrl: "",
+        isFirstFour: true,
       };
     });
 
-    const firstFourCombinedTeam = firstFourTeamsWithData?.length
+    const firstFourCombinedTeam: Team | null = firstFourTeamsWithData?.length
       ? firstFourTeamsWithData.reduce(
           (acc, team, index) => {
             return {
               ...acc,
               location: index === 0 ? team.location : acc.location,
               mascot: index === 0 ? acc.location : team.location,
+              isFirstFour: bottomTeamIsFirstFour,
             };
           },
           {
@@ -370,6 +368,7 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
             ppg: 0,
             oppg: 0,
             logoUrl: "",
+            isFirstFour: bottomTeamIsFirstFour,
           },
         )
       : null;
@@ -389,6 +388,7 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
             ppg: 0,
             oppg: 0,
             logoUrl: "",
+            isFirstFour: false,
           }
         : null;
 
@@ -412,6 +412,7 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
             ppg: 0,
             oppg: 0,
             logoUrl: "",
+            isFirstFour: false,
           }
         : null,
       bottomTeam,

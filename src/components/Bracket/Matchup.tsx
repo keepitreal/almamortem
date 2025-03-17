@@ -23,8 +23,9 @@ const TeamColumn: React.FC<TeamRowProps> = ({
   hasWinner,
 }) => {
   const roundAbbreviation = ROUND_TO_ROUND_ABBREVIATION[round].toLowerCase();
+  const id = team?.isFirstFour ? "ff" : team?.espnId;
   const teamImage = team
-    ? `url(/images/teams/${roundAbbreviation}/${team.espnId}.png)`
+    ? `url(/images/teams/${roundAbbreviation}/${id}.png)`
     : "";
 
   return (
@@ -48,7 +49,7 @@ const TeamColumn: React.FC<TeamRowProps> = ({
       }
     >
       {team && !isSelected && hasWinner && (
-        <div className="absolute inset-0 bg-primary opacity-40" />
+        <div className="absolute inset-0 bg-primary opacity-60" />
       )}
       <div
         className="matchup-team-bg flex w-full justify-between px-2 py-1"
@@ -60,7 +61,7 @@ const TeamColumn: React.FC<TeamRowProps> = ({
         {team ? (
           <div className="flex w-full justify-between">
             <div className="flex flex-col items-start bg-primary-content">
-              <span className="text-xs font-bold">{team.location}</span>
+              <span className="text-xs font-bold">{`${team.location}${team.isFirstFour ? " /" : ""}`}</span>
               <div className="flex flex-row gap-1">
                 <span className="text-xs">{team.mascot}</span>
                 <span className="text-xs text-base-content/60">

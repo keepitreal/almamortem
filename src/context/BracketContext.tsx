@@ -9,8 +9,8 @@ import {
 } from "react";
 
 import {
-  TOP_REGIONS_FOR_FINAL_FOUR,
   TOP_REGIONS_FOR_CHAMPIONSHIP,
+  TOP_REGIONS_FOR_FINAL_FOUR,
   TOP_TEAM_BY_SEED_AND_ROUND_ID,
 } from "~/constants";
 import { useMatchups } from "~/hooks/useMatchups";

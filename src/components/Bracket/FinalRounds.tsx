@@ -10,6 +10,7 @@ interface FinalFourTeamProps {
   isSelected: boolean;
   onSelect: () => void;
   isTopTeam?: boolean;
+  matchup: UserMatchup;
 }
 
 const FINAL_ROUNDS_WIDTH = 1550;
@@ -21,51 +22,62 @@ const FinalFourTeam: FC<FinalFourTeamProps> = ({
   isSelected,
   onSelect,
   isTopTeam = false,
-}) => (
-  <button
-    className={`relative flex h-[50%] w-full items-center justify-between transition-all ${
-      team ? "hover:bg-base-200" : ""
-    } ${isTopTeam ? "border-b-2 border-black" : ""}`}
-    onClick={onSelect}
-    disabled={!team}
-    style={
-      team
-        ? {
-            backgroundImage: `url('/images/teams/f4/${team.espnId}.png')`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }
-        : {}
-    }
-  >
-    <div
-      className={`final-four-team-namecard relative z-10 flex w-full flex-col justify-between p-2 ${
-        isTopTeam
-          ? "final-four-team-namecard-top"
-          : "final-four-team-namecard-bottom"
-      }`}
+  matchup,
+}) => {
+  const imagePath = team?.isFirstFour
+    ? `/images/teams/f4/ff.png`
+    : `/images/teams/f4/${team?.espnId}.png`;
+  return (
+    <button
+      className={`relative flex h-[50%] w-full items-center justify-between transition-all ${
+        team ? "hover:bg-base-200" : ""
+      } ${isTopTeam ? "border-b-2 border-black" : ""}`}
+      onClick={onSelect}
+      disabled={!team}
+      style={
+        team
+          ? {
+              backgroundImage: `url(${imagePath})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : {}
+      }
     >
-      {team ? (
-        <div className="flex">
-          <div className="flex flex-col">
-            <span className="text-sm font-bold">{team.name}</span>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{team.mascot}</span>
-              <span className="text-xs text-base-content/70">{team.seed}</span>
-            </div>
-          </div>
-          {isSelected && (
-            <div className="self-end">
-              <span className="text-md text-red-500">✔</span>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="h-8 w-full bg-base-300/50" />
+      {team && !isSelected && matchup?.winner && (
+        <div className="absolute inset-0 z-10 bg-black opacity-60" />
       )}
-    </div>
-  </button>
-);
+      <div
+        className={`final-four-team-namecard relative z-20 flex w-full flex-col justify-between p-2 ${
+          isTopTeam
+            ? "final-four-team-namecard-top"
+            : "final-four-team-namecard-bottom"
+        }`}
+      >
+        {team ? (
+          <div className="flex">
+            <div className="flex flex-col">
+              <span className="text-sm font-bold">{`${team.location}${team.isFirstFour ? " /" : ""}`}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">{team.mascot}</span>
+                <span className="text-xs text-base-content/70">
+                  {team.seed}
+                </span>
+              </div>
+            </div>
+            {isSelected && (
+              <div className="self-end">
+                <span className="text-md text-red-500">✔</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="h-8 w-full bg-base-300/50" />
+        )}
+      </div>
+    </button>
+  );
+};
 
 interface FinalFourMatchupProps {
   matchup: UserMatchup;
@@ -95,7 +107,7 @@ const FinalFourMatchup: FC<FinalFourMatchupProps> = ({
         Final Four
       </div>
       <div
-        className="card flex w-1/4 w-[400px] flex-col overflow-hidden border-2 border-black"
+        className="card flex w-1/5 w-[340px] flex-col overflow-hidden border-2 border-black"
         style={{
           height: "100%",
           borderRight: isLeft ? "none" : "2px solid black",
@@ -112,6 +124,7 @@ const FinalFourMatchup: FC<FinalFourMatchupProps> = ({
           isSelected={matchup.winner === matchup.topTeam?.id}
           onSelect={() => matchup.topTeam && onTeamSelect(matchup.topTeam)}
           isTopTeam
+          matchup={matchup}
         />
         <FinalFourTeam
           team={matchup.bottomTeam}
@@ -119,6 +132,7 @@ const FinalFourMatchup: FC<FinalFourMatchupProps> = ({
           onSelect={() =>
             matchup.bottomTeam && onTeamSelect(matchup.bottomTeam)
           }
+          matchup={matchup}
         />
       </div>
     </div>
@@ -130,6 +144,7 @@ interface ChampionshipTeamProps {
   isSelected: boolean;
   onSelect: () => void;
   isLeft?: boolean;
+  matchup: UserMatchup;
 }
 
 const ChampionshipTeam: FC<ChampionshipTeamProps> = ({
@@ -137,6 +152,7 @@ const ChampionshipTeam: FC<ChampionshipTeamProps> = ({
   isSelected,
   onSelect,
   isLeft = false,
+  matchup,
 }) => (
   <button
     className={`relative flex h-[100%] w-1/2 items-center justify-between transition-all ${
@@ -147,7 +163,7 @@ const ChampionshipTeam: FC<ChampionshipTeamProps> = ({
     style={
       team
         ? {
-            backgroundImage: `url('/images/teams/champ/${team.espnId}.png')`,
+            backgroundImage: `url('/images/teams/champ/${team.isFirstFour ? "ff" : team.espnId}.png')`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             borderLeft: isLeft ? "none" : "2px solid black",
@@ -155,11 +171,14 @@ const ChampionshipTeam: FC<ChampionshipTeamProps> = ({
         : {}
     }
   >
-    <div className="championship-team-namecard relative z-10 flex w-full justify-between p-4">
+    {team && !isSelected && matchup?.winner && (
+      <div className="absolute inset-0 z-10 bg-black opacity-60" />
+    )}
+    <div className="championship-team-namecard relative z-20 flex w-full justify-between p-4">
       {team ? (
         <div className="flex h-full w-full justify-between bg-primary-content">
           <div className="flex flex-col items-start bg-primary-content">
-            <span className="text-sm font-bold">{team.name}</span>
+            <span className="text-sm font-bold">{`${team.location}${team.isFirstFour ? " /" : ""}`}</span>
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold">{team.mascot}</span>
               <span className="text-sm text-base-content/70">{team.seed}</span>
@@ -202,11 +221,13 @@ const ChampionshipMatchup: FC<ChampionshipMatchupProps> = ({
         isSelected={matchup.winner === matchup.topTeam?.id}
         onSelect={() => matchup.topTeam && onTeamSelect(matchup.topTeam)}
         isLeft
+        matchup={matchup}
       />
       <ChampionshipTeam
         team={matchup.bottomTeam}
         isSelected={matchup.winner === matchup.bottomTeam?.id}
         onSelect={() => matchup.bottomTeam && onTeamSelect(matchup.bottomTeam)}
+        matchup={matchup}
       />
     </div>
   </div>
@@ -247,7 +268,7 @@ export const FinalRounds: FC<FinalRoundsProps> = ({
 
         {/* Championship - Absolutely positioned in center */}
         <div
-          className="flex w-1/2 flex-col items-center"
+          className="flex w-[60%] flex-col items-center"
           style={{ height: `${CHAMPIONSHIP_HEIGHT}px` }}
         >
           <ChampionshipMatchup
