@@ -234,7 +234,7 @@ const RenderRound: React.FC<RoundProps> = ({
 };
 
 function filterAndSortMatchups(
-  matchups: Matchup[],
+  matchups: UserMatchup[],
   round: RoundName,
   region: string,
 ) {
