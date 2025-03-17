@@ -2,8 +2,8 @@ import Image from "next/image";
 
 export const Overview = () => {
   return (
-    <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-8">
-      <div className="mb-8">
+    <div className="overview mx-auto flex max-w-4xl flex-col items-center px-4 py-8">
+      <div className="mb-4">
         <Image
           src="/assets/logo-grey.svg"
           alt="March Madness Logo"
@@ -16,10 +16,9 @@ export const Overview = () => {
       <p className="mt-8 text-lg text-gray-800">
         For each matchup in this tournament, choose the fighter that you believe
         has the best chance to win. Monitor your bracket's position in the
-        leaderboard and compete for the Palmer Prize!
-      </p>
-      <p className="mt-8 text-xs text-gray-800">
-        Alma Mortem is an AI art experiment and is not affiliated with any
+        leaderboard and compete for the Palmer Prize! Outcomes of each matchup
+        are determined by the 2025 men's college basketball tournament. This is
+        an experimental AI art project and is not affiliated with any
         universities or collegiate organizations.
       </p>
     </div>
