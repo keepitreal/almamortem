@@ -64,14 +64,14 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
         }
         return counts;
       },
-      {} as Record<string, number>,
+      {} as Record<number, number>,
     );
 
     // Get the team with the highest count
     const mostPickedTeamId = Object.entries(teamId).reduce(
       (mostPicked, [id, count]) =>
-        count > mostPicked.count ? { id, count } : mostPicked,
-      { id: "", count: 0 },
+        count > mostPicked.count ? { id: parseInt(id), count } : mostPicked,
+      { id: -1, count: 0 },
     ).id;
 
     const mostPickedTeam = teams.data?.find(
