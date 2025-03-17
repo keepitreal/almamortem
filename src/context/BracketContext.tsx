@@ -92,15 +92,6 @@ function updateBracket(
     nextMatchup.round === "Final 4" &&
     TOP_REGIONS_FOR_FINAL_FOUR.includes(currentMatchup.region);
 
-  console.log({
-    nextMatchup,
-    currentMatchup,
-    TOP_REGIONS_FOR_CHAMPIONSHIP,
-    isTopTeamForChampionship: TOP_REGIONS_FOR_CHAMPIONSHIP.includes(
-      currentMatchup.region,
-    ),
-  });
-
   const isTopTeamForChampionship =
     nextMatchup.round === "Championship" &&
     (TOP_REGIONS_FOR_CHAMPIONSHIP as Region[]).some((region) =>
@@ -142,7 +133,6 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { data: matchups, isLoading: isLoadingMatchups } = useMatchups();
-  console.log({ matchups });
   const [currentRound, setCurrentRound] =
     useState<Matchup["round"]>("Round of 64");
   const [isClient, setIsClient] = useState(false);
@@ -215,7 +205,6 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
         setUserPicks(stored);
       } else {
         const initializedPicks = initializeUserPicks(matchups);
-        console.log({ initializedPicks });
         setUserPicks(initializedPicks);
       }
     }
@@ -240,7 +229,6 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const setWinner = (matchupId: number, winnerId: number) => {
     const updatedPicks = updateBracket(userPicks, matchupId, winnerId);
-    console.log({ updatedPicks });
     setUserPicks(updatedPicks);
     // Save to local storage only when a user makes a pick
     if (isClient) {

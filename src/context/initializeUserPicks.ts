@@ -75,8 +75,6 @@ export const initializeUserPicks = (matchups: Matchup[]): UserMatchup[] => {
     midwestMatchupsR64,
   ];
 
-  console.log({ matchups });
-
   // Initialize Round of 64 with teams
   regionPairs.forEach((regionMatchups) => {
     regionMatchups.forEach((matchup) => {

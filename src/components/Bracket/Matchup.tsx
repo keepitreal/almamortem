@@ -26,6 +26,9 @@ const TeamColumn: React.FC<TeamRowProps> = ({
   const teamImage = team
     ? `url(/images/teams/${roundAbbreviation}/${team.espnId}.png)`
     : "";
+
+  console.log({ team, isSelected, hasWinner });
+
   return (
     <button
       className={`relative flex w-1/2 items-center justify-between px-4 py-3 transition-all ${

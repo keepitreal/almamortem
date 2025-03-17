@@ -5,8 +5,9 @@ import { useActiveAccount } from "thirdweb/react";
 
 import { LoadingOverlay } from "~/components/LoadingOverlay";
 import { useBracket } from "~/context/BracketContext";
-import type { Team } from "~/types/bracket";
+import type { RoundName, Team } from "~/types/bracket";
 import { getBracketHash } from "~/utils/bracketHash";
+import { ROUND_TO_ROUND_ABBREVIATION } from "~/types/bracket";
 
 import { Controls } from "./Controls";
 
@@ -114,6 +115,7 @@ export const Mobile: FC<MobileProps> = ({ tournamentId }) => {
     );
   }
 
+  console.log({ currentMatchup });
   return (
     <div className="flex min-h-screen flex-col bg-base-200 pt-16">
       {isLoading && <LoadingOverlay />}
@@ -126,6 +128,7 @@ export const Mobile: FC<MobileProps> = ({ tournamentId }) => {
           isSaving={isSaving}
           imageName="baylor"
           isRight={false}
+          round={currentMatchup.round}
         />
 
         {/* VS Divider */}
@@ -141,6 +144,7 @@ export const Mobile: FC<MobileProps> = ({ tournamentId }) => {
           isSaving={isSaving}
           imageName="coleman"
           isRight={true}
+          round={currentMatchup.round}
         />
       </div>
 
@@ -163,8 +167,14 @@ const MatchupTeam: FC<{
   isSaving: boolean;
   imageName: string;
   isRight: boolean;
-}> = ({ team, handleTeamSelect, isSaving, imageName, isRight }) => {
+  round: RoundName;
+}> = ({ team, handleTeamSelect, isSaving, imageName, isRight, round }) => {
   if (!team) return null;
+
+  const roundAbbreviation = ROUND_TO_ROUND_ABBREVIATION[round].toLowerCase();
+  const teamImage = team
+    ? `url(/images/teams/${roundAbbreviation}/${team.espnId}.png)`
+    : "";
 
   return (
     <button
@@ -178,7 +188,7 @@ const MatchupTeam: FC<{
       <div
         className="absolute inset-0 bg-cover bg-center opacity-70"
         style={{
-          backgroundImage: `url('/images/teams/${imageName}.png')`,
+          backgroundImage: teamImage,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
