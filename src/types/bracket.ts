@@ -45,6 +45,7 @@ export interface Matchup {
   date: string;
   time: string;
   network: string;
+  firstFour: Team[];
 }
 
 export interface UserMatchup extends Matchup {

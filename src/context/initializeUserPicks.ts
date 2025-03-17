@@ -96,6 +96,7 @@ export const initializeUserPicks = (matchups: Matchup[]): UserMatchup[] => {
         topTeamSeed: matchup.topTeamSeed,
         bottomTeamSeed: matchup.bottomTeamSeed,
         roundId: matchup.roundId,
+        firstFour: matchup.firstFour,
       });
     });
   });
@@ -218,6 +219,7 @@ export const initializeUserPicks = (matchups: Matchup[]): UserMatchup[] => {
       roundId: matchup.roundId,
       topTeamSeed: matchup.topTeamSeed,
       bottomTeamSeed: matchup.bottomTeamSeed,
+      firstFour: matchup.firstFour,
     });
   });
 

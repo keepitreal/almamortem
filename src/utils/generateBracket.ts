@@ -51,17 +51,13 @@ export function generateTournamentBracket(): Matchup[] {
 
   // Generate Round of 64 (32 games)
   // We need to do this for each region (4 regions * 8 games = 32 games)
-  for (const [regionIndex, region] of REGIONS.entries()) {
-    const regionNumber = (regionIndex + 1) as 1 | 2 | 3 | 4;
-    const topTeamSeedsForRegion =
-      TOP_TEAM_BY_SEED_AND_ROUND_ID[regionNumber].TOP;
+  for (const region of REGIONS.values()) {
+    const topTeamSeedsForRound = TOP_TEAM_BY_SEED_AND_ROUND_ID[1].TOP;
     for (const seedPair of INITIAL_SEED_PAIRS.values()) {
       const seedA = seedPair[0];
       const seedB = seedPair[1];
-      const topTeamSeed = topTeamSeedsForRegion.includes(seedA!)
-        ? seedA
-        : seedB;
-      const bottomTeamSeed = topTeamSeedsForRegion.includes(seedA!)
+      const topTeamSeed = topTeamSeedsForRound.includes(seedA!) ? seedA : seedB;
+      const bottomTeamSeed = topTeamSeedsForRound.includes(seedA!)
         ? seedB
         : seedA;
       matchups.push({
