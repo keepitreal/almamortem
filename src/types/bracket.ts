@@ -12,14 +12,15 @@ export type Region =
   | "South"
   | "Midwest"
   | "All"
-  | "WestMidwest"
-  | "SouthEast";
+  | "SouthWest"
+  | "EastMidwest";
 
 export interface Team {
-  id: string;
+  id: number;
   espnId?: string;
   name: string;
   mascot: string;
+  location: string;
   seed: number;
   region: Region;
   record: string;
@@ -30,8 +31,11 @@ export interface Team {
 
 export interface Matchup {
   id: number;
+  roundId: number;
   topTeam: Team | null;
+  topTeamSeed: number | null;
   bottomTeam: Team | null;
+  bottomTeamSeed: number | null;
   round: RoundName;
   region: Region;
   nextMatchupId: number | null;
@@ -44,7 +48,7 @@ export interface Matchup {
 }
 
 export interface UserMatchup extends Matchup {
-  winner: string | null; // Team ID of the winner
+  winner: number | null; // Team ID of the winner
 }
 
 export type MatchupMap = Record<number, Matchup>;

@@ -43,7 +43,7 @@ export const NFT_ADDRESS: Record<number, Address> = {
   [baseSepolia.id]: "0x43FbE073e19cA7ab32E97eAFBD408E6061cC2995",
 };
 
-export const SEASON = 2024; // 2025
+export const SEASON = 2025; // 2025
 export const RANDOM_ROUND_OF_64 = false; // useful if testing a year where teams arent announced yet
 
 export const INITIAL_SEED_PAIRS = [
@@ -57,6 +57,20 @@ export const INITIAL_SEED_PAIRS = [
   [2, 15],
 ];
 
+export const ROUND_NAME_BY_ROUND_ID: Record<number, RoundName> = {
+  1: "Round of 64",
+  2: "Round of 32",
+  3: "Sweet 16",
+  4: "Elite 8",
+  5: "Final 4",
+  6: "Championship",
+};
+
+export const REGION_PAIRS = [
+  ["South", "West"],
+  ["East", "Midwest"],
+];
+
 export const TOP_TEAM_BY_SEED_AND_ROUND = {
   "Round of 32": {
     TOP: [1, 16, 5, 12, 6, 11, 7, 10],
@@ -68,6 +82,24 @@ export const TOP_TEAM_BY_SEED_AND_ROUND = {
     TOP: [1, 16, 8, 9, 5, 12, 4, 13],
   },
 };
+
+export const TOP_TEAM_BY_SEED_AND_ROUND_ID = {
+  1: {
+    TOP: [1, 8, 5, 4, 6, 3, 7, 2],
+  },
+  2: {
+    TOP: [1, 16, 5, 12, 6, 11, 7, 10],
+  },
+  3: {
+    TOP: [1, 16, 8, 9, 6, 11, 3, 14],
+  },
+  4: {
+    TOP: [1, 16, 8, 9, 5, 12, 4, 13],
+  },
+};
+
+export const TOP_REGIONS_FOR_FINAL_FOUR = ["South", "East"];
+export const TOP_REGIONS_FOR_CHAMPIONSHIP = ["South", "West"];
 
 export const ROUND_NAMES: RoundName[] = [
   "Round of 64",

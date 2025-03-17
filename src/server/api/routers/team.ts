@@ -3,8 +3,6 @@ import { z } from "zod";
 import { redis } from "~/lib/redis";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import type { Team } from "~/types/bracket";
-
-import { getMatchups } from "./matchup";
 interface ESPNTeamLogo {
   href: string;
   alt: string;
@@ -81,9 +79,10 @@ export async function getAllTeams(): Promise<Team[]> {
     const region = regions[regionIndex]!;
 
     return {
-      id: team.id,
+      id: team.id as unknown as number,
       espnId: team.id,
       name: team.location,
+      location: team.location,
       mascot: team.name,
       seed,
       region,
@@ -104,31 +103,8 @@ export async function getAllTeams(): Promise<Team[]> {
 
 export const teamRouter = createTRPCRouter({
   getAll: publicProcedure.query(async (): Promise<Team[]> => {
-    console.log("Fetching matchups for team mapping...");
-    const { espnTeamIdToDerivedTeamId } = await getMatchups();
-    console.log("Team ID mapping:", {
-      hasMappings: Boolean(espnTeamIdToDerivedTeamId),
-      mappingCount: Object.keys(espnTeamIdToDerivedTeamId || {}).length,
-    });
-
-    console.log("Fetching all teams...");
     const teams = await getAllTeams();
-    console.log("Teams fetched:", {
-      teamsLength: teams.length,
-      firstTeamId: teams[0]?.id,
-      firstTeamName: teams[0]?.name,
-    });
-
-    return teams.map((team) => {
-      const derivedId = espnTeamIdToDerivedTeamId?.[team.id];
-      const finalId = derivedId ?? `${team.id}:${team.name}`;
-
-      return {
-        ...team,
-        // prevents teams that are not in the tournament from sharing an id with teams that are in the tournament
-        id: finalId,
-      };
-    });
+    return teams;
   }),
 
   // Add additional procedures here as needed, for example:

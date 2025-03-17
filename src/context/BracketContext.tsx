@@ -8,12 +8,15 @@ import {
   useState,
 } from "react";
 
-import { TOP_TEAM_BY_SEED_AND_ROUND } from "~/constants";
+import {
+  TOP_REGIONS_FOR_FINAL_FOUR,
+  TOP_REGIONS_FOR_CHAMPIONSHIP,
+  TOP_TEAM_BY_SEED_AND_ROUND_ID,
+} from "~/constants";
 import { useMatchups } from "~/hooks/useMatchups";
-import { useTeams } from "~/hooks/useTeams";
 import type { Matchup, Region, UserMatchup } from "~/types/bracket";
 
-import { initializeUserPicks } from "./utils";
+import { initializeUserPicks } from "./initializeUserPicks";
 
 interface BracketContextType {
   matchups: Matchup[] | undefined;
@@ -23,7 +26,7 @@ interface BracketContextType {
   currentMatchup: UserMatchup | undefined;
   setCurrentMatchupId: Dispatch<SetStateAction<number>>;
   userPicks: UserMatchup[];
-  setWinner: (matchupId: number, winnerId: string) => void;
+  setWinner: (matchupId: number, winnerId: number) => void;
   isLoading: boolean;
   regionPairs: [Region[], Region[]];
   completedSelections: number;
@@ -42,6 +45,76 @@ export const useBracket = () => {
 
 const STORAGE_KEY = "bracketUserPicks";
 
+function updateBracket(
+  userPicks: UserMatchup[],
+  matchupId: number,
+  winnerId: number,
+): UserMatchup[] {
+  // Create a new array to avoid mutating the original
+  const updatedPicks = [...userPicks];
+
+  // Find the current matchup
+  const currentMatchupIndex = updatedPicks.findIndex((m) => m.id === matchupId);
+  if (currentMatchupIndex === -1) return updatedPicks;
+
+  const currentMatchup = updatedPicks[currentMatchupIndex]!;
+
+  // Update the winner of the current matchup
+  updatedPicks[currentMatchupIndex] = {
+    ...currentMatchup,
+    winner: winnerId,
+  };
+
+  // get the next matchup
+  const nextMatchupId = currentMatchup.nextMatchupId;
+  if (!nextMatchupId) return updatedPicks;
+
+  const nextMatchupIndex = updatedPicks.findIndex(
+    (m) => m.id === nextMatchupId,
+  );
+  if (nextMatchupIndex === -1) return updatedPicks;
+
+  const nextMatchup = updatedPicks[nextMatchupIndex]!;
+  const winningTeam = [currentMatchup.topTeam, currentMatchup.bottomTeam].find(
+    (t) => t?.id === winnerId,
+  );
+  if (!winningTeam) return updatedPicks;
+
+  const topTeamSeedsForNextMatchup =
+    TOP_TEAM_BY_SEED_AND_ROUND_ID[nextMatchup.roundId as 1 | 2 | 3 | 4]?.TOP ??
+    [];
+
+  const isTopTeamForRegionalRounds = topTeamSeedsForNextMatchup.includes(
+    winningTeam.seed,
+  );
+
+  const isTopTeamForFinalFour =
+    nextMatchup.round === "Final 4" &&
+    TOP_REGIONS_FOR_FINAL_FOUR.includes(currentMatchup.region);
+
+  const isTopTeamForChampionship =
+    nextMatchup.round === "Championship" &&
+    (TOP_REGIONS_FOR_CHAMPIONSHIP as Region[]).some((region) =>
+      currentMatchup.region.includes(region),
+    );
+
+  const isWinningTeamTopTeamInNextMatchup =
+    isTopTeamForRegionalRounds ||
+    isTopTeamForFinalFour ||
+    isTopTeamForChampionship;
+
+  // update the next matchup with the winning team
+  updatedPicks[nextMatchupIndex] = {
+    ...nextMatchup,
+    ...(isWinningTeamTopTeamInNextMatchup
+      ? { topTeam: winningTeam }
+      : { bottomTeam: winningTeam }),
+  };
+  // // If there's a next matchup, update it with the winner
+
+  return updatedPicks;
+}
+
 const loadUserPicksFromStorage = (): UserMatchup[] | null => {
   if (typeof window === "undefined") return null;
 
@@ -59,13 +132,10 @@ const loadUserPicksFromStorage = (): UserMatchup[] | null => {
 export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { data: teams, isLoading: isLoadingTeams } = useTeams();
-  console.log(teams);
   const { data: matchups, isLoading: isLoadingMatchups } = useMatchups();
   const [currentRound, setCurrentRound] =
     useState<Matchup["round"]>("Round of 64");
   const [isClient, setIsClient] = useState(false);
-  const [lastPickTime, setLastPickTime] = useState<number | null>(null);
 
   // Set isClient to true once component mounts
   useEffect(() => {
@@ -74,6 +144,16 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Initialize userPicks from localStorage or create new
   const [userPicks, setUserPicks] = useState<UserMatchup[]>([]);
+
+  // Load userPicks from localStorage once client is ready
+  useEffect(() => {
+    if (isClient) {
+      const storedPicks = loadUserPicksFromStorage();
+      if (storedPicks) {
+        setUserPicks(storedPicks);
+      }
+    }
+  }, [isClient]);
 
   // Compute selections from userPicks
   const { completedSelections, totalSelections } = useMemo(
@@ -106,7 +186,8 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const pairs = Object.values(eliteEightMatchupsByNextMatchupId).map(
       (matchups) => {
-        return matchups.map((m) => m.region);
+        // Sort regions alphabetically within each pair
+        return matchups.map((m) => m.region).sort();
       },
     );
 
@@ -118,17 +199,16 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Initialize bracket data when it becomes available and we're on the client
   useEffect(() => {
-    if (isClient && matchups?.length && teams?.length) {
+    if (isClient && matchups?.length) {
       const stored = loadUserPicksFromStorage();
       if (stored?.length) {
         setUserPicks(stored);
       } else {
-        const initializedPicks = initializeUserPicks(matchups, teams);
-        console.log(initializedPicks);
+        const initializedPicks = initializeUserPicks(matchups);
         setUserPicks(initializedPicks);
       }
     }
-  }, [isClient, matchups, teams]);
+  }, [isClient, matchups]);
 
   const [currentMatchupId, setCurrentMatchupId] = useState<number>(1);
 
@@ -136,7 +216,9 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (userPicks.length > 0) {
       const firstUnfinished = userPicks.find((m) => !m.winner);
-      setCurrentMatchupId(firstUnfinished?.id ?? userPicks[0]?.id ?? 1);
+      if (firstUnfinished) {
+        setCurrentMatchupId(firstUnfinished.id);
+      }
     }
   }, [userPicks]);
 
@@ -145,118 +227,12 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
     [userPicks, currentMatchupId],
   );
 
-  // Save to localStorage whenever a pick is made
-  useEffect(() => {
-    if (isClient && lastPickTime && userPicks.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(userPicks));
-    }
-  }, [isClient, lastPickTime, userPicks]);
-
-  const setWinner = (matchupId: number, winnerId: string) => {
-    setUserPicks((picks) => {
-      const updatedPicks = picks.map((pick) =>
-        pick.id === matchupId ? { ...pick, winner: winnerId } : pick,
-      );
-
-      // Find the current matchup and its next matchup
-      const currentMatchup = updatedPicks.find((p) => p.id === matchupId);
-      if (!currentMatchup?.nextMatchupId) return updatedPicks;
-
-      const nextMatchup = updatedPicks.find(
-        (p) => p.id === currentMatchup.nextMatchupId,
-      );
-      if (!nextMatchup) return updatedPicks;
-
-      // Get the winning team
-      const winningTeam =
-        currentMatchup.winner === currentMatchup.topTeam?.id
-          ? currentMatchup.topTeam
-          : currentMatchup.bottomTeam;
-
-      if (!winningTeam) return updatedPicks;
-
-      // Special case handling for different rounds
-      let shouldBeTopTeam = false;
-
-      switch (nextMatchup.round) {
-        case "Round of 64":
-          // Teams are already placed correctly in Round of 64
-          return updatedPicks;
-        case "Final 4":
-          // For Final Four, use the region's position in regionPairs
-          const [regionPair1, regionPair2] = regionPairs;
-          const regionIndex1 = regionPair1.indexOf(winningTeam.region);
-          const regionIndex2 = regionPair2.indexOf(winningTeam.region);
-          shouldBeTopTeam = regionIndex1 === 0 || regionIndex2 === 0;
-          break;
-        case "Championship":
-          // For Championship, still use the position from the current matchup
-          shouldBeTopTeam = currentMatchup.position === "top";
-          break;
-        default:
-          // For other rounds (Round of 32, Sweet 16, Elite 8), use the seed placement rules
-          shouldBeTopTeam =
-            TOP_TEAM_BY_SEED_AND_ROUND[nextMatchup.round]?.TOP.includes(
-              winningTeam.seed,
-            ) ?? false;
-      }
-
-      // Update the next matchup based on the seed placement rules
-      return updatedPicks.map((pick) => {
-        if (pick.id === nextMatchup.id) {
-          return {
-            ...pick,
-            topTeam: shouldBeTopTeam ? winningTeam : pick.topTeam,
-            bottomTeam: shouldBeTopTeam ? pick.bottomTeam : winningTeam,
-          };
-        }
-        return pick;
-      });
-    });
-
-    // Update lastPickTime to trigger localStorage save
-    setLastPickTime(Date.now());
-
-    // Find the next unfinished matchup in the current round
-    const currentRoundMatchups = userPicks.filter(
-      (m) => m.round === currentRound,
-    );
-    const currentIndex = currentRoundMatchups.findIndex(
-      (m) => m.id === matchupId,
-    );
-
-    // Look for the next unfinished matchup in the current round
-    const nextUnfinishedMatchup = currentRoundMatchups
-      .slice(currentIndex + 1)
-      .find((m) => !m.winner);
-
-    if (nextUnfinishedMatchup) {
-      // If found, move to that matchup
-      setCurrentMatchupId(nextUnfinishedMatchup.id);
-    } else {
-      // If no more unfinished matchups in current round, look for the next round with unfinished matchups
-      const roundOrder: Matchup["round"][] = [
-        "Round of 64",
-        "Round of 32",
-        "Sweet 16",
-        "Elite 8",
-        "Final 4",
-        "Championship",
-      ];
-
-      const currentRoundIndex = roundOrder.indexOf(currentRound);
-      const nextRounds = roundOrder.slice(currentRoundIndex + 1);
-
-      for (const round of nextRounds) {
-        const nextRoundMatchups = userPicks.filter((m) => m.round === round);
-        const firstUnfinishedMatchup = nextRoundMatchups.find((m) => !m.winner);
-
-        if (firstUnfinishedMatchup) {
-          setCurrentRound(round);
-          setCurrentMatchupId(firstUnfinishedMatchup.id);
-          break;
-        }
-      }
+  const setWinner = (matchupId: number, winnerId: number) => {
+    const updatedPicks = updateBracket(userPicks, matchupId, winnerId);
+    setUserPicks(updatedPicks);
+    // Save to local storage only when a user makes a pick
+    if (isClient) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPicks));
     }
   };
 
@@ -277,7 +253,7 @@ export const BracketProvider: React.FC<{ children: React.ReactNode }> = ({
         setCurrentMatchupId,
         userPicks,
         setWinner,
-        isLoading: !isClient || isLoadingMatchups || isLoadingTeams,
+        isLoading: !isClient || isLoadingMatchups,
         regionPairs,
       }}
     >
