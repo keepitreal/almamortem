@@ -9,6 +9,7 @@ interface TeamRowProps {
   height?: number;
   round: RoundName;
   hasWinner: boolean;
+  isFirstFour: boolean;
 }
 
 const MATCHUP_HEIGHT = 170;
@@ -21,10 +22,12 @@ const TeamColumn: React.FC<TeamRowProps> = ({
   height,
   round,
   hasWinner,
+  isFirstFour,
 }) => {
   const roundAbbreviation = ROUND_TO_ROUND_ABBREVIATION[round].toLowerCase();
+  const id = isFirstFour ? "ff" : team?.espnId;
   const teamImage = team
-    ? `url(/images/teams/${roundAbbreviation}/${team.espnId}.png)`
+    ? `url(/images/teams/${roundAbbreviation}/${id}.png)`
     : "";
 
   return (
@@ -60,7 +63,7 @@ const TeamColumn: React.FC<TeamRowProps> = ({
         {team ? (
           <div className="flex w-full justify-between">
             <div className="flex flex-col items-start bg-primary-content">
-              <span className="text-xs font-bold">{team.location}</span>
+              <span className="text-xs font-bold">{`${team.location}${isFirstFour ? " /" : ""}`}</span>
               <div className="flex flex-row gap-1">
                 <span className="text-xs">{team.mascot}</span>
                 <span className="text-xs text-base-content/60">
@@ -114,6 +117,7 @@ export const Matchup: React.FC<MatchupProps> = ({
         isTopTeam
         round={matchup.round}
         hasWinner={!!matchup.winner}
+        isFirstFour={false}
       />
       <TeamColumn
         team={matchup.bottomTeam}
@@ -122,6 +126,7 @@ export const Matchup: React.FC<MatchupProps> = ({
         height={height}
         round={matchup.round}
         hasWinner={!!matchup.winner}
+        isFirstFour={!!matchup.firstFour.length}
       />
     </div>
   );

@@ -14,10 +14,11 @@ export const Overview = () => {
         />
       </div>
       <p className="text-lg text-gray-800">
-        On March 16th, 2025, the NCAA chose 64 super soldiers developed by
-        universities across America to compete for critical funding from the US
-        Government. Only one of these soldiers will go on to represent the US in
-        battles against rival nations.
+        On March 16th, 2025, the National Coalition for Armament Advancement
+        (NCAA) chose 64 super soldiers developed by universities across America
+        to compete for critical funding from the US Government. Only one of
+        these soldiers will go on to represent the US in battles against rival
+        nations.
       </p>
       <p className="mt-8 text-lg text-gray-800">
         For each round in this tournament, choose the fighter that you believe
