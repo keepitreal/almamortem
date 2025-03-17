@@ -75,7 +75,7 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
     ).id;
 
     const mostPickedTeam = teams.data?.find(
-      (team) => team.id === mostPickedTeamId,
+      (team) => team.id.toString() === mostPickedTeamId.toString(),
     );
 
     if (!mostPickedTeam) {
