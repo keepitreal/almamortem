@@ -109,9 +109,9 @@ function updateBracket(
     ...(isWinningTeamTopTeamInNextMatchup
       ? { topTeam: winningTeam }
       : { bottomTeam: winningTeam }),
+    winner: null,
   };
-  // // If there's a next matchup, update it with the winner
-
+  // If there's a next matchup, update it with the winner
   return updatedPicks;
 }
 

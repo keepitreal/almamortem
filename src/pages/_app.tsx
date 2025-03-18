@@ -23,7 +23,7 @@ const OnchainProviders = dynamic(() => import("~/providers/OnchainProviders"), {
 const pageTitle = `Play ${APP_NAME}`;
 const pageDescription = APP_DESCRIPTION;
 const pageUrl = APP_URL;
-const imageUrl = `${APP_URL}/images/og.gif`;
+const imageUrl = `${APP_URL}/images/preview.png`;
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
@@ -39,13 +39,16 @@ const MyApp: AppType<{ session: Session | null }> = ({
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={pageDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={pageUrl} />
         <meta property="og:image" content={imageUrl} />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={pageTitle} />

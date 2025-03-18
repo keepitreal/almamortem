@@ -89,7 +89,10 @@ export const Desktop: FC<DesktopProps> = ({
   return (
     <div className="bg-base-200">
       {isLoading && <LoadingOverlay />}
-      <div className="bg-base-200 py-24 pl-8 pr-16">
+      <div
+        className="origin-top-left bg-base-200 py-24 pl-8 pr-16"
+        style={{ transform: "scale(0.90)" }}
+      >
         <div
           className="mx-auto mb-8 rounded-lg px-6"
           style={{
@@ -146,10 +149,10 @@ export const Desktop: FC<DesktopProps> = ({
             </div>
           </div>
         </div>
-        {!readOnly && (
-          <Controls isSaving={isSaving} tournamentId={Number(tournamentId)} />
-        )}
       </div>
+      {!readOnly && (
+        <Controls isSaving={isSaving} tournamentId={Number(tournamentId)} />
+      )}
     </div>
   );
 };

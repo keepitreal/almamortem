@@ -206,7 +206,19 @@ html, body {
   z-index: 10000;
 }
 
+.navbar-styles {
+  font-family: 'Inter', sans-serif;
+}
+
 .overview {
+  font-family: 'Inter', sans-serif;
+}
+
+.countdown-timer {
+  font-family: 'Inter', sans-serif;
+}
+
+.controls {
   font-family: 'Inter', sans-serif;
 }
 
