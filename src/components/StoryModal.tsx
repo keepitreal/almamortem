@@ -89,7 +89,7 @@ export const StoryModal = () => {
                   <>
                     <div className="h-full w-full border-[10px] border-white">
                       <img
-                        src={panel.image}
+                        src={panel?.image}
                         alt={`Story panel ${currentPanel + 1}`}
                         className="h-full w-full object-cover"
                       />
