@@ -1,5 +1,6 @@
 import { type FC } from "react";
 
+import { CheckmarkCircle } from "~/components/icons/CheckmarkCircle";
 import type { Team, UserMatchup } from "~/types/bracket";
 import { regionToUniversityNamesDemo } from "~/types/bracket";
 
@@ -47,6 +48,11 @@ const FinalFourTeam: FC<FinalFourTeamProps> = ({
       {team && !isSelected && matchup?.winner && (
         <div className="absolute inset-0 z-10 bg-black opacity-60" />
       )}
+      {team && isSelected && (
+        <div className="absolute left-2 top-2 z-30">
+          <CheckmarkCircle />
+        </div>
+      )}
       <div
         className={`final-four-team-namecard relative z-20 flex w-full flex-col justify-between p-2 ${
           isTopTeam
@@ -65,11 +71,6 @@ const FinalFourTeam: FC<FinalFourTeamProps> = ({
                 </span>
               </div>
             </div>
-            {isSelected && (
-              <div className="self-end">
-                <span className="text-md text-red-500">✔</span>
-              </div>
-            )}
           </div>
         ) : (
           <div className="h-8 w-full bg-base-300/50" />
@@ -174,6 +175,11 @@ const ChampionshipTeam: FC<ChampionshipTeamProps> = ({
     {team && !isSelected && matchup?.winner && (
       <div className="absolute inset-0 z-10 bg-black opacity-60" />
     )}
+    {team && isSelected && (
+      <div className="absolute left-2 top-2 z-30">
+        <CheckmarkCircle />
+      </div>
+    )}
     <div className="championship-team-namecard relative z-20 flex w-full justify-between p-4">
       {team ? (
         <div className="flex h-full w-full justify-between bg-primary-content">
@@ -184,11 +190,6 @@ const ChampionshipTeam: FC<ChampionshipTeamProps> = ({
               <span className="text-sm text-base-content/70">{team.seed}</span>
             </div>
           </div>
-          {isSelected && (
-            <div className="self-end">
-              <span className="text-xl text-red-500">✔</span>
-            </div>
-          )}
         </div>
       ) : (
         <div className="h-10 w-full bg-base-300/50" />

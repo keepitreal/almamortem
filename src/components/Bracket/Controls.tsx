@@ -1,6 +1,7 @@
 import { toTokens } from "thirdweb";
 
 import { useBracket } from "~/context/BracketContext";
+import { useEthPrice } from "~/hooks/useEthPrice";
 import { useTournament } from "~/hooks/useTournament";
 
 import BracketOwner from "./BracketOwner";
@@ -18,6 +19,11 @@ export const Controls = ({
 }: ControlsProps) => {
   const { completedSelections, totalSelections } = useBracket();
   const { paymentTokenMetadata, entryFee } = useTournament(tournamentId);
+  const ethAmount = Number(
+    toTokens(BigInt(entryFee), paymentTokenMetadata?.decimals ?? 18),
+  );
+  const { usdPrice, isLoading } = useEthPrice(ethAmount);
+
   const progress =
     totalSelections > 0 ? (completedSelections / totalSelections) * 100 : 0;
 
@@ -48,12 +54,12 @@ export const Controls = ({
         {/* Entry Fee */}
         <div className="flex items-center justify-end gap-4">
           <div className="flex items-center">
-            <span className="text-xs font-bold uppercase text-base-content/70">
+            <span className="text-md font-bold uppercase text-base-content/70">
               Entry Fee:
             </span>
-            <span className="text-md ml-2 mr-4 rounded-md border-[3px] border-amber-200 bg-amber-50 px-2 py-1 font-bold">
-              {toTokens(BigInt(entryFee), paymentTokenMetadata?.decimals ?? 18)}{" "}
-              {`${paymentTokenMetadata?.symbol} (~$5.72`}
+            <span className="text-md ml-2 mr-4 rounded-md border-[3px] border-gray-300 bg-gray-200 px-2 py-1 font-bold text-gray-600">
+              {ethAmount} {paymentTokenMetadata?.symbol}{" "}
+              {!isLoading && usdPrice && `(~$${usdPrice.toFixed(2)})`}
             </span>
           </div>
           <div className="text-right uppercase italic">
