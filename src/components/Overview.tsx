@@ -37,7 +37,7 @@ const useCountdown = (deadline: Date) => {
   return timeLeft;
 };
 
-export const Overview = () => {
+export const Overview = ({ readOnly }: { readOnly: boolean }) => {
   const timeLeft = useCountdown(DEADLINE);
 
   return (
@@ -61,35 +61,37 @@ export const Overview = () => {
         universities or collegiate organizations.
       </p>
 
-      <div className="countdown-timer mt-8 flex flex-col items-center gap-2 text-primary">
-        <span className="text-lg font-medium">Submit entries by</span>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-col items-center">
-            <span className="text-2xl font-bold tabular-nums">
-              {String(timeLeft.days).padStart(2, "0")}
-            </span>
-            <span className="text-xs uppercase">DAYS</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-2xl font-bold tabular-nums">
-              {String(timeLeft.hours).padStart(2, "0")}
-            </span>
-            <span className="text-xs uppercase">HRS</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-2xl font-bold tabular-nums">
-              {String(timeLeft.minutes).padStart(2, "0")}
-            </span>
-            <span className="text-xs uppercase">MINS</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-2xl font-bold tabular-nums">
-              {String(timeLeft.seconds).padStart(2, "0")}
-            </span>
-            <span className="text-xs uppercase">SEC</span>
+      {!readOnly && (
+        <div className="countdown-timer mt-8 flex flex-col items-center gap-2 text-primary">
+          <span className="text-lg font-medium">Submit entries by</span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col items-center">
+              <span className="text-2xl font-bold tabular-nums">
+                {String(timeLeft.days).padStart(2, "0")}
+              </span>
+              <span className="text-xs uppercase">DAYS</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-2xl font-bold tabular-nums">
+                {String(timeLeft.hours).padStart(2, "0")}
+              </span>
+              <span className="text-xs uppercase">HRS</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-2xl font-bold tabular-nums">
+                {String(timeLeft.minutes).padStart(2, "0")}
+              </span>
+              <span className="text-xs uppercase">MINS</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-2xl font-bold tabular-nums">
+                {String(timeLeft.seconds).padStart(2, "0")}
+              </span>
+              <span className="text-xs uppercase">SEC</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

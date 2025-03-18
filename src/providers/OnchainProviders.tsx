@@ -1,32 +1,36 @@
-import { OnchainKitProvider } from '@coinbase/onchainkit';
-import { frameConnector } from "~/utils/farcasterConnector";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useState, type FC } from 'react';
-import { ThirdwebProvider } from 'thirdweb/react';
-import { 
-  createConfig, 
-  http, 
-  type Transport, 
-  WagmiProvider,
-} from 'wagmi';
-import { coinbaseWallet, injected, walletConnect } from 'wagmi/connectors';
-
-import { APP_DESCRIPTION, APP_NAME, APP_URL, DEFAULT_CHAIN, SUPPORTED_CHAINS } from '~/constants';
-import { env } from '~/env';
+import { OnchainKitProvider } from "@coinbase/onchainkit";
 import farcasterFrameSdk from "@farcaster/frame-sdk";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { type FC, useEffect, useState } from "react";
+import { ThirdwebProvider } from "thirdweb/react";
+import { createConfig, http, type Transport, WagmiProvider } from "wagmi";
+import { coinbaseWallet, injected, walletConnect } from "wagmi/connectors";
 
-import '@coinbase/onchainkit/styles.css';
+import {
+  APP_DESCRIPTION,
+  APP_NAME,
+  APP_URL,
+  DEFAULT_CHAIN,
+  SUPPORTED_CHAINS,
+} from "~/constants";
+import { env } from "~/env";
+import { frameConnector } from "~/utils/farcasterConnector";
+
+import "@coinbase/onchainkit/styles.css";
 
 type Props = {
   children: React.ReactNode;
-}
+};
 
-const transports = SUPPORTED_CHAINS.reduce((acc, chain) => {
-  acc[chain.id] = http(
-    `https://${chain.id}.rpc.thirdweb.com/${env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`
-  )
-  return acc;
-}, {} as Record<number, Transport>);
+const transports = SUPPORTED_CHAINS.reduce(
+  (acc, chain) => {
+    acc[chain.id] = http(
+      `https://${chain.id}.rpc.thirdweb.com/${env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`,
+    );
+    return acc;
+  },
+  {} as Record<number, Transport>,
+);
 
 // Create wagmi config
 export const config = createConfig({
@@ -45,10 +49,10 @@ export const config = createConfig({
         name: APP_NAME,
         description: APP_DESCRIPTION,
         url: APP_URL,
-        icons: [`${APP_URL}/images/icon.png`]
-      }
+        icons: [`${APP_URL}/images/icon.png`],
+      },
     }),
-  ]
+  ],
 });
 
 // Create a client
@@ -80,7 +84,7 @@ const OnchainProviders: FC<Props> = ({ children }) => {
                 logo: `${APP_URL}/images/icon.png`,
               },
               wallet: {
-                display: 'modal',
+                display: "modal",
               },
             }}
           >
@@ -90,6 +94,6 @@ const OnchainProviders: FC<Props> = ({ children }) => {
       </QueryClientProvider>
     </WagmiProvider>
   );
-} 
- 
+};
+
 export default OnchainProviders;

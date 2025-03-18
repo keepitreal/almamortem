@@ -8,8 +8,8 @@ import {
   useState,
 } from "react";
 
+import { TOP_TEAM_BY_SEED_AND_ROUND } from "~/constants";
 import { useMatchups } from "~/hooks/useMatchups";
-import { useTeams } from "~/hooks/useTeams";
 import type {
   Matchup,
   NFTMetadata,
@@ -50,6 +50,7 @@ const convertNFTPickToUserMatchup = (
   nftPick: NFTPick,
   teams: Team[],
   matchups: Matchup[],
+  nftUserPicks: NFTPick[],
 ): UserMatchup => {
   // Find the original matchup to get additional data
   const originalMatchup = matchups.find((m) => m.id === nftPick.id);
@@ -62,28 +63,78 @@ const convertNFTPickToUserMatchup = (
     throw new Error(`Matchup with ID ${nftPick.id} not found`);
   }
 
+  let topTeam: Team | null = null;
+  let bottomTeam: Team | null = null;
+
+  // For Round of 64, use the matchup's original teams
+  if (originalMatchup.round === "Round of 64") {
+    topTeam = originalMatchup.topTeam;
+    bottomTeam = originalMatchup.bottomTeam;
+  } else {
+    // For subsequent rounds, find the winning teams from previous matchups
+    const previousMatchups = originalMatchup.previousMatchupIds
+      .map((prevId) => {
+        const prevMatchup = matchups.find((m) => m.id === prevId);
+        if (!prevMatchup) return null;
+
+        // Find the NFT pick for this previous matchup
+        const prevNFTPick = nftUserPicks.find((p) => p.id === prevMatchup.id);
+
+        if (!prevNFTPick) {
+          console.log(
+            `No NFT pick found for previous matchup ${prevMatchup.id}`,
+          );
+          return null;
+        }
+
+        // Get the winning team from the previous matchup
+        const winningTeam = teams.find(
+          (t) => t.id === Number(prevNFTPick.winner),
+        );
+        if (!winningTeam) {
+          console.log(`No winning team found with ID ${prevNFTPick.winner}`);
+          return null;
+        }
+
+        return { matchup: prevMatchup, winner: winningTeam };
+      })
+      .filter((m): m is { matchup: Matchup; winner: Team } => m !== null);
+
+    if (previousMatchups.length === 2) {
+      // Only use TOP_TEAM_BY_SEED_AND_ROUND for rounds where it's defined
+      const round = originalMatchup.round;
+      if (round in TOP_TEAM_BY_SEED_AND_ROUND) {
+        const topSeeds =
+          TOP_TEAM_BY_SEED_AND_ROUND[
+            round as keyof typeof TOP_TEAM_BY_SEED_AND_ROUND
+          ].TOP;
+
+        // Sort previous matchups by their winners' seeds to match the expected positions
+        previousMatchups.sort((a, b) => {
+          const aIsTop = topSeeds.includes(a.winner.seed);
+          const bIsTop = topSeeds.includes(b.winner.seed);
+          if (aIsTop && !bIsTop) return -1;
+          if (!aIsTop && bIsTop) return 1;
+          return a.winner.seed - b.winner.seed;
+        });
+      } else {
+        // For rounds not in TOP_TEAM_BY_SEED_AND_ROUND (Final 4, Championship)
+        // Just sort by seed
+        previousMatchups.sort((a, b) => a.winner.seed - b.winner.seed);
+      }
+
+      // Assign winners as top and bottom teams
+      // We know there are exactly 2 matchups at this point
+      topTeam = previousMatchups[0]?.winner ?? null;
+      bottomTeam = previousMatchups[1]?.winner ?? null;
+    }
+  }
+
   console.log(
-    `Converting pick for matchup ${nftPick.id}, top team: ${nftPick.topTeam.id}, bottom team: ${nftPick.bottomTeam.id}, region: ${originalMatchup.region}`,
+    `Converting pick for matchup ${nftPick.id}, round: ${originalMatchup.round}, ` +
+      `top team: ${topTeam?.id}, bottom team: ${bottomTeam?.id}, ` +
+      `region: ${originalMatchup.region}`,
   );
-
-  // Find the teams by ID - handle both string and number IDs
-  const topTeam =
-    teams.find((t) => t.id === Number(nftPick.topTeam.id)) ?? null;
-  const bottomTeam =
-    teams.find((t) => t.id === Number(nftPick.bottomTeam.id)) ?? null;
-
-  if (!topTeam) {
-    console.warn(`Top team with ID ${nftPick.topTeam.id} not found`);
-  }
-
-  if (!bottomTeam) {
-    console.warn(`Bottom team with ID ${nftPick.bottomTeam.id} not found`);
-  }
-
-  // Make sure region is included
-  if (!originalMatchup.region) {
-    console.warn(`Matchup ${nftPick.id} has no region`);
-  }
 
   return {
     ...originalMatchup,
@@ -91,6 +142,19 @@ const convertNFTPickToUserMatchup = (
     bottomTeam,
     winner: Number(nftPick.winner),
   };
+};
+
+// Helper function to get all teams from Round of 64 matchups
+const getTeamsFromMatchups = (matchups: Matchup[]): Team[] => {
+  const roundOf64Matchups = matchups.filter((m) => m.round === "Round of 64");
+  const teams = new Set<Team>();
+
+  roundOf64Matchups.forEach((matchup) => {
+    if (matchup.topTeam) teams.add(matchup.topTeam);
+    if (matchup.bottomTeam) teams.add(matchup.bottomTeam);
+  });
+
+  return Array.from(teams);
 };
 
 interface NFTBracketProviderProps {
@@ -102,7 +166,6 @@ export const NFTBracketProvider: React.FC<NFTBracketProviderProps> = ({
   children,
   metadata,
 }) => {
-  const { data: teams, isLoading: isLoadingTeams } = useTeams();
   const { data: matchups, isLoading: isLoadingMatchups } = useMatchups();
   const [currentRound, setCurrentRound] =
     useState<Matchup["round"]>("Round of 64");
@@ -115,6 +178,12 @@ export const NFTBracketProvider: React.FC<NFTBracketProviderProps> = ({
 
   // Initialize userPicks from NFT metadata
   const [userPicks, setUserPicks] = useState<UserMatchup[]>([]);
+
+  // Get teams from Round of 64 matchups
+  const teams = useMemo(() => {
+    if (!matchups?.length) return [];
+    return getTeamsFromMatchups(matchups);
+  }, [matchups]);
 
   // Compute selections from userPicks
   const { completedSelections, totalSelections } = useMemo(
@@ -169,7 +238,7 @@ export const NFTBracketProvider: React.FC<NFTBracketProviderProps> = ({
 
   // Initialize bracket data when it becomes available and we're on the client
   useEffect(() => {
-    if (isClient && matchups?.length && teams?.length && metadata.data.picks) {
+    if (isClient && matchups?.length && teams.length && metadata.data.picks) {
       console.log("NFTBracketContext: Initializing with metadata", metadata);
       console.log("NFTBracketContext: Teams available", teams.length);
       console.log("NFTBracketContext: Matchups available", matchups.length);
@@ -183,6 +252,7 @@ export const NFTBracketProvider: React.FC<NFTBracketProviderProps> = ({
                 nftPick,
                 teams,
                 matchups,
+                metadata.data.picks,
               );
               return userMatchup;
             } catch (error) {
@@ -241,7 +311,7 @@ export const NFTBracketProvider: React.FC<NFTBracketProviderProps> = ({
         setCurrentMatchupId,
         userPicks,
         setWinner,
-        isLoading: !isClient || isLoadingMatchups || isLoadingTeams,
+        isLoading: !isClient || isLoadingMatchups,
         regionPairs,
       }}
     >
