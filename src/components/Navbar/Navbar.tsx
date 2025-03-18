@@ -43,7 +43,7 @@ export const Navbar = () => {
   }, [disconnectAsync, setActiveWallet, switchChainAsync, walletClient]);
 
   return (
-    <div className="navbar fixed left-0 right-0 top-0 z-50 w-full bg-secondary">
+    <div className="navbar-styles navbar fixed left-0 right-0 top-0 z-50 w-full bg-secondary">
       <div className="navbar-start">
         <Logo />
       </div>
@@ -73,7 +73,7 @@ const NavbarItems = ({
       {items.map((item) => (
         <li
           key={item.href}
-          className="text-primary-content hover:bg-primary/90"
+          className="text-md text-primary-content hover:bg-primary/90"
         >
           <Link href={item.href}>{item.children}</Link>
         </li>
