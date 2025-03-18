@@ -145,7 +145,7 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
           id={modalId}
           className="modal-toggle"
         />
-        <div className="modal" role="dialog">
+        <div className="submit-modal modal" role="dialog">
           <div className="modal-box">
             <h3 className="text-center text-lg font-bold">Submit Bracket</h3>
             <div className="py-4 text-start">
@@ -166,7 +166,7 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
                 onStatus={onStatusChange}
               >
                 <TransactionButton
-                  className="btn btn-primary rounded-none font-anime"
+                  className="btn btn-primary rounded-none uppercase italic"
                   text="Submit Bracket"
                   disabled={calls.length === 0 || isUploading}
                 />

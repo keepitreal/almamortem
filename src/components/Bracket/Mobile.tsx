@@ -3,11 +3,12 @@ import { type FC } from "react";
 import { useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 
+import { CheckmarkCircle } from "~/components/icons/CheckmarkCircle";
 import { LoadingOverlay } from "~/components/LoadingOverlay";
 import { useBracket } from "~/context/BracketContext";
 import type { RoundName, Team } from "~/types/bracket";
-import { getBracketHash } from "~/utils/bracketHash";
 import { ROUND_TO_ROUND_ABBREVIATION } from "~/types/bracket";
+import { getBracketHash } from "~/utils/bracketHash";
 
 import { Controls } from "./Controls";
 
@@ -101,21 +102,9 @@ export const Mobile: FC<MobileProps> = ({ tournamentId }) => {
   };
 
   if (!currentMatchup) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-base-200 p-4">
-        <h1 className="text-2xl font-bold">No more matchups to complete!</h1>
-        <p className="mt-4 text-center">
-          You&apos;ve completed {completedSelections} out of {totalSelections}{" "}
-          picks.
-        </p>
-        <div className="mt-8">
-          <Controls isSaving={isSaving} tournamentId={Number(tournamentId)} />
-        </div>
-      </div>
-    );
+    return <div></div>;
   }
 
-  console.log({ currentMatchup });
   return (
     <div className="flex min-h-screen flex-col bg-base-200 pt-16">
       {isLoading && <LoadingOverlay />}
@@ -135,6 +124,8 @@ export const Mobile: FC<MobileProps> = ({ tournamentId }) => {
         <VersusDivider
           team1={currentMatchup.topTeam}
           team2={currentMatchup.bottomTeam}
+          handleTeamSelect={handleTeamSelect}
+          isSaving={isSaving}
         />
 
         {/* Bottom Team */}
@@ -148,14 +139,10 @@ export const Mobile: FC<MobileProps> = ({ tournamentId }) => {
         />
       </div>
 
-      {/* Footer */}
-      <BracketFooter
-        completedSelections={completedSelections}
-        totalSelections={totalSelections}
-        onSubmit={handleSubmitBracket}
+      <Controls
         isSaving={isSaving}
-        currentRound={currentRound}
-        region={currentMatchup.region}
+        tournamentId={Number(tournamentId)}
+        isMobile
       />
     </div>
   );
@@ -169,11 +156,15 @@ const MatchupTeam: FC<{
   isRight: boolean;
   round: RoundName;
 }> = ({ team, handleTeamSelect, isSaving, imageName, isRight, round }) => {
+  const { currentMatchup } = useBracket();
+  const isSelected = currentMatchup?.winner === team?.id;
+
   if (!team) return null;
 
   const roundAbbreviation = ROUND_TO_ROUND_ABBREVIATION[round].toLowerCase();
+  const id = team?.isFirstFour ? "ff" : team?.espnId;
   const teamImage = team
-    ? `url(/images/teams/${roundAbbreviation}/${team.espnId}.png)`
+    ? `url(/images/teams/${roundAbbreviation}/${id}.png)`
     : "";
 
   return (
@@ -186,13 +177,23 @@ const MatchupTeam: FC<{
     >
       {/* Background Image */}
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-70"
+        className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage: teamImage,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       />
+      {/* Checkmark Icon */}
+      {isSelected && (
+        <div
+          className={`absolute right-4 ${
+            isRight ? "bottom-4" : "top-4"
+          } z-10 text-red-600`}
+        >
+          <CheckmarkCircle />
+        </div>
+      )}
     </button>
   );
 };
@@ -200,24 +201,28 @@ const MatchupTeam: FC<{
 const VersusDivider: FC<{
   team1: Team | null;
   team2: Team | null;
-}> = ({ team1, team2 }) => {
+  handleTeamSelect: (team: Team) => void;
+  isSaving: boolean;
+}> = ({ team1, team2, handleTeamSelect, isSaving }) => {
   if (!team1 || !team2) return null;
 
   const renderTeam = (team: Team, isRight: boolean) => {
     return (
-      <div
-        className={`versus relative flex w-2/5 bg-primary-content px-1 text-center text-lg font-bold text-primary ${
+      <button
+        onClick={() => !isSaving && handleTeamSelect(team)}
+        disabled={isSaving}
+        className={`versus relative flex w-2/5 cursor-pointer bg-primary-content px-1 text-center text-lg font-bold text-primary focus:outline-none ${
           isRight ? "versus-right" : "versus-left"
         }`}
       >
         <div className="flex flex-col items-start justify-center px-2">
-          <div className="text-xs italic">{team.name}</div>
+          <div className="text-xs italic">{team.location}</div>
           <div className="flex items-center gap-2">
             <span className="bold text-sm italic">{team.mascot}</span>
             <span className="text-base text-xs text-gray-500">{team.seed}</span>
           </div>
         </div>
-      </div>
+      </button>
     );
   };
 

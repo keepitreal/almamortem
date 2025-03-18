@@ -7,7 +7,7 @@ import type { Region, RoundName } from "~/types/bracket";
 
 export const APP_NAME = "Alma Mortem";
 export const APP_DESCRIPTION =
-  "An AI-powered graphic novel and 2025 mens college basketball tournament bracket challenge";
+  "An AI-powered onchain graphic novel and 2025 mens college basketball tournament bracket challenge";
 export const APP_URL = "https://almamortem.com";
 export const SUPPORTED_CHAINS: readonly [Chain, ...Chain[]] = [base];
 export const DEFAULT_CHAIN = SUPPORTED_CHAINS[0];

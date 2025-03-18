@@ -1,10 +1,14 @@
 import { type GetServerSideProps, type NextPage } from "next";
+import { useMemo } from "react";
 import { defineChain, type NFT } from "thirdweb";
 import { getContract } from "thirdweb/contract";
 import { getNFTs } from "thirdweb/extensions/erc721";
 
 import { LeaderboardEntry } from "~/components/Leaderboard/Entry";
 import { CLIENT, DEFAULT_CHAIN, NFT_ADDRESS } from "~/constants";
+import { useMatchups } from "~/hooks/useMatchups";
+import { type Matchup, type NFTPick, type Team } from "~/types/bracket";
+import type { Leader } from "~/types/leader";
 
 // make get server side props
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
@@ -32,16 +36,84 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   };
 };
 
+interface NFTMetadata {
+  data: {
+    picks: NFTPick[];
+  };
+}
+
+function decorateNFT(nft: NFT, teamsById: Record<number, Team>): Leader {
+  const metadata = nft.metadata as unknown as NFTMetadata;
+  const championshipPick = metadata.data?.picks?.find(
+    (pick: NFTPick) => pick.round === "Championship",
+  );
+  const championTeam = championshipPick?.winner
+    ? teamsById[Number(championshipPick.winner)]
+    : null;
+
+  return {
+    champion: championTeam
+      ? {
+          imageUrl: `/images/teams/champ/${championTeam.isFirstFour ? "ff" : championTeam.espnId}.png`,
+          location: championTeam.location,
+          mascot: championTeam.mascot,
+        }
+      : null,
+    accuracy: 0,
+    maxAccuracy: 100,
+    owner: typeof nft.owner === "string" ? nft.owner : undefined,
+    nftId: nft.id.toString(),
+  };
+}
+
 export const Leaderboard: NextPage<{
   tournamentId: string;
   nfts: NFT[];
 }> = ({ tournamentId, nfts }) => {
+  const { data: matchups, isLoading: isLoadingMatchups } = useMatchups();
+
+  if (isLoadingMatchups || !matchups) {
+    return <div>Loading...</div>;
+  }
+
+  const teamsById = useMemo(() => {
+    const teams: Record<number, Team> = {};
+    matchups
+      .filter((m) => m.round === "Round of 64")
+      .forEach((matchup) => {
+        if (matchup.topTeam) {
+          teams[matchup.topTeam.id] = matchup.topTeam;
+        }
+        if (matchup.bottomTeam) {
+          teams[matchup.bottomTeam.id] = matchup.bottomTeam;
+        }
+      });
+    return teams;
+  }, [matchups]);
+
+  const decoratedNfts = useMemo(
+    () => nfts.map((nft) => decorateNFT(nft, teamsById)),
+    [nfts, teamsById],
+  );
+
   return (
-    <div className="flex flex-col mt-20 mx-auto max-w-md gap-2">
-      <h1>Leaderboard</h1>
+    <div className="mx-auto mt-20 flex max-w-4xl flex-col gap-4">
+      {/* Headers */}
+      <div className="flex w-full items-center justify-between rounded-lg bg-base-200 px-8 pt-4 font-sans font-bold">
+        <div className="w-1/3">Player</div>
+        <div className="w-1/6 text-center">Accuracy</div>
+        <div className="w-1/6 text-center">Max. Accuracy</div>
+        <div className="w-1/3 text-right">Overall Champion</div>
+      </div>
+
+      {/* Entries */}
       <div className="flex flex-col gap-2">
-        {nfts.map((nft) => (
-          <LeaderboardEntry tournamentId={tournamentId} key={nft.id} nft={nft} />
+        {decoratedNfts.map((leader, index) => (
+          <LeaderboardEntry
+            key={nfts[index]?.id}
+            leader={leader}
+            tournamentId={tournamentId}
+          />
         ))}
       </div>
     </div>

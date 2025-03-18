@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { defineChain } from "thirdweb";
 import { viemAdapter } from "thirdweb/adapters/viem";
@@ -52,7 +53,11 @@ export const Navbar = () => {
           items={[
             { href: "/my-brackets", children: "My Brackets" },
             { href: "/bracket/0/leaderboard", children: "Leaderboard" },
-            { href: "/contract", children: "Contract" },
+            {
+              href: "https://basescan.org/address/0xf8a7d44d5cc6f3124d1432a790e613b77865e83e",
+              children: "Contract",
+              external: true,
+            },
           ]}
         />
       </div>
@@ -66,16 +71,38 @@ export const Navbar = () => {
 const NavbarItems = ({
   items,
 }: {
-  items: { href: string; children: React.ReactNode }[];
+  items: { href: string; children: React.ReactNode; external?: boolean }[];
 }) => {
+  const router = useRouter();
+
   return (
     <ul className="color-primary-content menu menu-horizontal px-1 font-bold uppercase">
       {items.map((item) => (
         <li
           key={item.href}
-          className="text-md text-primary-content hover:bg-primary/90"
+          className={`text-md hover:text-red-600 focus:text-red-600 ${
+            router.pathname === item.href
+              ? "text-red-600"
+              : "text-primary-content"
+          }`}
         >
-          <Link href={item.href}>{item.children}</Link>
+          {item.external ? (
+            <a
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-red-600 focus:text-red-600"
+            >
+              {item.children}
+            </a>
+          ) : (
+            <Link
+              href={item.href}
+              className="hover:text-red-600 focus:text-red-600"
+            >
+              {item.children}
+            </Link>
+          )}
         </li>
       ))}
     </ul>

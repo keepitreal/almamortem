@@ -111,8 +111,6 @@ const NFTBracketContent: FC<{
   metadata: NFTMetadata;
 }> = ({ tournamentId, metadata }) => {
   const { userPicks } = useNFTBracket();
-
-  console.log("nft userPicks", userPicks);
   return (
     <div className="flex flex-col">
       <h1 className="mb-4 mt-8 text-center text-3xl font-bold">
