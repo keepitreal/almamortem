@@ -8,7 +8,7 @@ import type { Region, RoundName } from "~/types/bracket";
 export const APP_NAME = "Alma Mortem";
 export const APP_DESCRIPTION = "A tribute to the 2025 NCAA Tournament";
 export const APP_URL = "https://almamortem.com";
-export const SUPPORTED_CHAINS: readonly [Chain, ...Chain[]] = [baseSepolia];
+export const SUPPORTED_CHAINS: readonly [Chain, ...Chain[]] = [base];
 export const DEFAULT_CHAIN = SUPPORTED_CHAINS[0];
 export const THIRDWEB_CHAIN = defineChain(DEFAULT_CHAIN.id);
 
@@ -29,17 +29,17 @@ export const CHAINLINK_JOB_ID: Record<number, Hex> = {
 export const CHAINLINK_GAS_LIMIT = 200000;
 
 export const TOURNAMENT_ADDRESS: Record<number, Address> = {
-  [base.id]: "0x0000000000000000000000000000000000000000",
+  [base.id]: "0xf8a7d44D5Cc6F3124d1432a790E613b77865e83E",
   [baseSepolia.id]: "0x69c6eF3Ecaf2f11E3D1409DC39418859bA4A0f9a",
 };
 
 export const ORACLE_ADDRESS: Record<number, Address> = {
-  [base.id]: "0x0000000000000000000000000000000000000000",
+  [base.id]: "0xbb0bC2F53eAC29Ca696671F5Ab5740274103d38C",
   [baseSepolia.id]: "0x4008119f8E3Dd2a5dC28a04CfF36093c52EB2d17",
 };
 
 export const NFT_ADDRESS: Record<number, Address> = {
-  [base.id]: "0x0000000000000000000000000000000000000000",
+  [base.id]: "0xF2A9a348d21833f0e20940B2bd7B89668c6C73F5",
   [baseSepolia.id]: "0xc4C1272A867252876752c2bc7c40867ec4B7F006",
 };
 

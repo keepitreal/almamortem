@@ -6,24 +6,24 @@ const RESET = "\x1b[0m";
 const GREEN = "\x1b[32m";
 const RED = "\x1b[31m";
 
-const DURATION_BEFORE_TOURNAMENT_STARTS = 600; // 10 minutes
+//const DURATION_BEFORE_TOURNAMENT_STARTS = 600; // 10 minutes
 // TURN THIS OFF ON PRODUCTION DEPLOYS
 const CREATE_TOURNAMENT_ON_DEPLOY = {
-  enabled: true,
+  enabled: false,
   entryFee: "10000000000000", // 0.00001 ETH
   paymentToken: "0x0000000000000000000000000000000000000000", // ETH
-  startTime: Math.floor(Date.now() / 1000) + DURATION_BEFORE_TOURNAMENT_STARTS, // Current time + 1 hour
+  startTime: 1742490000,// Math.floor(Date.now() / 1000) + DURATION_BEFORE_TOURNAMENT_STARTS, // Current time + 1 hour
 }
 
 // TURN THIS OFF ON PRODUCTION DEPLOYS
 const AUTOMATICALLY_FETCH_TEAM_WINS_ON_DEPLOY = {
-  enabled: true,
+  enabled: false,
   jobId: "0x66756e2d626173652d7365706f6c69612d310000000000000000000000000000",
   gasLimit: 200000n,
 }
 
 // TURN THIS OFF ON PRODUCTION DEPLOYS
-const automaticallyEnterTournament = true;
+const automaticallyEnterTournament = false;
 const AUTOMATICALLY_ENTER_TOURNAMENT_ON_DEPLOY = {
   // create must be enabled to enter the tournament
   enabled: !CREATE_TOURNAMENT_ON_DEPLOY.enabled ? false : automaticallyEnterTournament,
@@ -31,7 +31,7 @@ const AUTOMATICALLY_ENTER_TOURNAMENT_ON_DEPLOY = {
 }
 
 // TURN THIS OFF ON PRODUCTION DEPLOYS
-const DEPLOY_TEST_SCORE_ORACLE = true;
+const DEPLOY_TEST_SCORE_ORACLE = false;
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -44,12 +44,12 @@ const FUNCTIONS_ROUTER = {
 
 const FUNCTIONS_SUBSCRIPTION_ID = {
   "84532": 290,// 208 is myk's subscription
-  "8453": 6,
+  "8453": 50,
 }
 
 const CHAINLINK_SUBSCRIPTION_ID = {
   "84532": 290n,
-  "8453": 6n,
+  "8453": 50n,
 }
 
 const FUNCTIONS_SUBSCRIPTIONS_REGISTRY = {
@@ -219,7 +219,7 @@ async function main() {
       CREATE_TOURNAMENT_ON_DEPLOY.paymentToken,
       CREATE_TOURNAMENT_ON_DEPLOY.startTime
     );
-    const durationHumanReadable = `${DURATION_BEFORE_TOURNAMENT_STARTS / 60} minutes`;
+    const durationHumanReadable = `${(CREATE_TOURNAMENT_ON_DEPLOY.startTime - Math.floor(Date.now() / 1000)) / 60} minutes`;
     console.log(`Tournament created on deploy. You have ${durationHumanReadable} to add your bracket before the tournament starts.\n`);
   }
 
