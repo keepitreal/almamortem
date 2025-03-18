@@ -1,12 +1,20 @@
 import { type IncomingMessage } from "http";
 import { type GetServerSideProps, type NextPage } from "next";
+import { type FC } from "react";
 import { defineChain } from "thirdweb";
 import { getContract } from "thirdweb/contract";
 import { tokenURI } from "thirdweb/extensions/erc721";
 import { download } from "thirdweb/storage";
 
-import { NFTDesktop } from "~/components/Bracket/NFTDesktop";
-import { APP_NAME, APP_URL, CLIENT, DEFAULT_CHAIN, NFT_ADDRESS } from "~/constants";
+import { Desktop } from "~/components/Bracket/Desktop";
+import {
+  APP_NAME,
+  APP_URL,
+  CLIENT,
+  DEFAULT_CHAIN,
+  NFT_ADDRESS,
+} from "~/constants";
+import { useNFTBracket } from "~/context/NFTBracketContext";
 import { NFTBracketProvider } from "~/context/NFTBracketContext";
 import type { NFTMetadata } from "~/types/bracket";
 
@@ -17,8 +25,8 @@ type ExtendedRequest = IncomingMessage & {
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { tournamentId, tokenId } = context.query;
-  
-  if (typeof tournamentId !== 'string' || typeof tokenId !== 'string') {
+
+  if (typeof tournamentId !== "string" || typeof tokenId !== "string") {
     return { notFound: true };
   }
 
@@ -34,7 +42,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const tokenUri = await tokenURI({
       contract,
       tokenId: BigInt(tokenId),
-     });
+    });
 
     if (!tokenUri) {
       throw new Error("Token URI not found");
@@ -46,7 +54,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       uri: tokenUri,
     });
 
-    const data = await response.json() as NFTMetadata;
+    const data = (await response.json()) as NFTMetadata;
     const metadata = data;
 
     // Generate the frame metadata
@@ -56,13 +64,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       button: {
         title: APP_NAME,
         action: {
-          type: 'launch_frame',
+          type: "launch_frame",
           name: APP_NAME,
           url: `${APP_URL}/bracket/${tournamentId}/view/${tokenId}`,
           splashImageUrl: `${APP_URL}/images/icon.png`,
-          splashBackgroundColor: '#fafafa',
-        }
-      }
+          splashBackgroundColor: "#fafafa",
+        },
+      },
     });
 
     // Attach the frame metadata to the request object
@@ -75,7 +83,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         tournamentId,
         tokenId,
         metadata,
-      }
+      },
     };
   } catch (error) {
     console.error("Error fetching NFT metadata:", error);
@@ -89,15 +97,30 @@ interface PageProps {
   metadata: NFTMetadata;
 }
 
-const ViewTokenBracket: NextPage<PageProps> = ({ tournamentId, tokenId, metadata }) => {
+const ViewTokenBracket: NextPage<PageProps> = ({ tournamentId, metadata }) => {
   return (
     <NFTBracketProvider metadata={metadata}>
-      <div className="flex flex-col">
-        <h1 className="text-center text-3xl font-bold mt-8 mb-4">{metadata.data.name}</h1>
-        <NFTDesktop tournamentId={tournamentId} />
-      </div>
+      <NFTBracketContent tournamentId={tournamentId} metadata={metadata} />
     </NFTBracketProvider>
   );
 };
 
-export default ViewTokenBracket; 
+// Separate component to use the hook inside the provider
+const NFTBracketContent: FC<{
+  tournamentId: string;
+  metadata: NFTMetadata;
+}> = ({ tournamentId, metadata }) => {
+  const { userPicks } = useNFTBracket();
+
+  console.log("nft userPicks", userPicks);
+  return (
+    <div className="flex flex-col">
+      <h1 className="mb-4 mt-8 text-center text-3xl font-bold">
+        {metadata.data.name}
+      </h1>
+      <Desktop tournamentId={tournamentId} nftUserPicks={userPicks} />
+    </div>
+  );
+};
+
+export default ViewTokenBracket;

@@ -1,3 +1,4 @@
+import { useSearchParams } from "next/navigation";
 import { type FC } from "react";
 import { useState } from "react";
 
@@ -5,12 +6,12 @@ import { LoadingOverlay } from "~/components/LoadingOverlay";
 import { Overview } from "~/components/Overview";
 import { ROUND_NAMES } from "~/constants";
 import { useBracket } from "~/context/BracketContext";
-import type { Team } from "~/types/bracket";
+import { useNFTBracket } from "~/context/NFTBracketContext";
+import type { Team, UserMatchup } from "~/types/bracket";
 
 import { Controls } from "./Controls";
 import { FinalRounds } from "./FinalRounds";
 import { RegionalBracket } from "./RegionalBracket";
-
 // Layout Constants
 const MATCHUP_WIDTH = 350; // pixels
 const COLUMN_GAP = 30; // pixels
@@ -36,15 +37,22 @@ const MATCHUP_HEIGHT = {
 
 interface DesktopProps {
   tournamentId: string;
-  readOnly?: boolean;
+  nftUserPicks?: UserMatchup[];
 }
 
-export const Desktop: FC<DesktopProps> = ({
-  tournamentId,
-  readOnly = false,
-}) => {
-  const { userPicks, setWinner, regionPairs, isLoading } = useBracket();
+export const Desktop: FC<DesktopProps> = ({ tournamentId, nftUserPicks }) => {
+  const {
+    userPicks: contextUserPicks,
+    setWinner,
+    regionPairs,
+    isLoading,
+  } = useBracket();
   const [isSaving, setIsSaving] = useState(false);
+  const searchParams = useSearchParams();
+  const readOnly = searchParams.get("readOnly") === "true";
+
+  // Use nftUserPicks if provided, otherwise fall back to context userPicks
+  const userPicks = nftUserPicks ?? contextUserPicks;
 
   const handleTeamSelect = (matchupId: number, team: Team) => {
     if (readOnly) return; // Don't allow team selection in read-only mode
@@ -62,6 +70,7 @@ export const Desktop: FC<DesktopProps> = ({
     (matchup) => matchup.round === "Final 4",
   );
 
+  console.log("finalFourMatchups", finalFourMatchups);
   // Find which Final Four matchup corresponds to each side of the bracket
   const leftSideFinalFour = finalFourMatchups.find((matchup) => {
     return matchup.previousMatchupIds.some((prevId) => {
@@ -83,7 +92,7 @@ export const Desktop: FC<DesktopProps> = ({
   );
 
   if (!leftSideFinalFour || !rightSideFinalFour || !championshipMatchup) {
-    return <div>Error: Missing required matchups</div>;
+    return <div>Loading...</div>;
   }
 
   return (
@@ -119,7 +128,7 @@ export const Desktop: FC<DesktopProps> = ({
 
             <div className="flex w-[280px] flex-col">
               <div className="absolute left-1/2 z-50 -translate-x-1/2">
-                <Overview />
+                <Overview readOnly={readOnly} />
               </div>
             </div>
             {/* Final Rounds */}
@@ -150,9 +159,11 @@ export const Desktop: FC<DesktopProps> = ({
           </div>
         </div>
       </div>
-      {!readOnly && (
-        <Controls isSaving={isSaving} tournamentId={Number(tournamentId)} />
-      )}
+      <Controls
+        isSaving={isSaving}
+        tournamentId={Number(tournamentId)}
+        readOnly={readOnly}
+      />
     </div>
   );
 };
