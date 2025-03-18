@@ -94,7 +94,7 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
               name: `${APP_NAME} Bracket`,
               description:
                 "A detailed description of my NFT artwork or collectible.",
-              image: mostPickedTeam.logoUrl,
+              image: `${APP_URL}/images/teams/champ/${mostPickedTeam.espnId}.png`,
               external_url: `${APP_URL}`,
               attributes: [
                 {
