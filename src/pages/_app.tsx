@@ -20,7 +20,7 @@ const OnchainProviders = dynamic(() => import("~/providers/OnchainProviders"), {
   ssr: false,
 });
 
-const pageTitle = `Play ${APP_NAME}`;
+const pageTitle = `${APP_NAME} on Base`;
 const pageDescription = APP_DESCRIPTION;
 const pageUrl = APP_URL;
 const imageUrl = `${APP_URL}/images/preview.png`;

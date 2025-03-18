@@ -16,8 +16,9 @@ interface WatchSubmitProps {
 
 // Use type assertion for the dynamic import
 const WatchSubmit = dynamic(
-  () => import("~/components/Bracket/WatchSubmit").then(mod => mod.WatchSubmit),
-  { ssr: false }
+  () =>
+    import("~/components/Bracket/WatchSubmit").then((mod) => mod.WatchSubmit),
+  { ssr: false },
 ) as React.ComponentType<WatchSubmitProps>;
 
 const DESKTOP_MIN_WIDTH = 1024; // Minimum width in pixels to show desktop view
@@ -29,8 +30,8 @@ type ExtendedRequest = IncomingMessage & {
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { tournamentId } = context.query;
-  
-  if (typeof tournamentId !== 'string') {
+
+  if (typeof tournamentId !== "string") {
     return { notFound: true };
   }
 
@@ -41,13 +42,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     button: {
       title: APP_NAME,
       action: {
-        type: 'launch_frame',
+        type: "launch_frame",
         name: APP_NAME,
         url: `${APP_URL}/bracket/${tournamentId}`,
         splashImageUrl: `${APP_URL}/images/icon.png`,
-        splashBackgroundColor: '#fafafa',
-      }
-    }
+        splashBackgroundColor: "#fafafa",
+      },
+    },
   });
 
   // Attach the frame metadata to the request object
@@ -58,9 +59,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
     props: {
       tournamentId,
-    }
-  }
-}
+    },
+  };
+};
 
 interface PageProps {
   tournamentId: string;
@@ -69,9 +70,20 @@ interface PageProps {
 const BuildBracket: NextPage<PageProps> = ({ tournamentId }) => {
   const [isDesktop, setIsDesktop] = useState(true);
   const router = useRouter();
+  const { viewport } = router.query;
 
   useEffect(() => {
-    // Check initial screen size
+    // If viewport is specified in query, use that
+    if (viewport === "mobile") {
+      setIsDesktop(false);
+      return;
+    }
+    if (viewport === "desktop") {
+      setIsDesktop(true);
+      return;
+    }
+
+    // Otherwise, check screen size
     const checkScreenSize = () => {
       setIsDesktop(window.innerWidth >= DESKTOP_MIN_WIDTH);
     };
@@ -84,12 +96,16 @@ const BuildBracket: NextPage<PageProps> = ({ tournamentId }) => {
 
     // Cleanup
     return () => window.removeEventListener("resize", checkScreenSize);
-  }, []);
+  }, [viewport]);
 
   const handleBracketSubmitted = (tokenId: string) => {
     console.log("Bracket submitted", tokenId);
-    void router.push(`/bracket/${tournamentId}/view/${tokenId}`);
-  }
+    // Preserve viewport parameter when navigating
+    void router.push({
+      pathname: `/bracket/${tournamentId}/view/${tokenId}`,
+      query: viewport ? { viewport } : undefined,
+    });
+  };
 
   if (!tournamentId) {
     return <LoadingOverlay />;
@@ -104,7 +120,7 @@ const BuildBracket: NextPage<PageProps> = ({ tournamentId }) => {
         <Mobile tournamentId={tournamentId} />
       )}
     </>
-  )
+  );
 };
 
 export default BuildBracket;

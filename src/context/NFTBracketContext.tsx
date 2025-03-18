@@ -81,9 +81,6 @@ const convertNFTPickToUserMatchup = (
         const prevNFTPick = nftUserPicks.find((p) => p.id === prevMatchup.id);
 
         if (!prevNFTPick) {
-          console.log(
-            `No NFT pick found for previous matchup ${prevMatchup.id}`,
-          );
           return null;
         }
 
@@ -92,7 +89,6 @@ const convertNFTPickToUserMatchup = (
           (t) => t.id === Number(prevNFTPick.winner),
         );
         if (!winningTeam) {
-          console.log(`No winning team found with ID ${prevNFTPick.winner}`);
           return null;
         }
 
@@ -129,12 +125,6 @@ const convertNFTPickToUserMatchup = (
       bottomTeam = previousMatchups[1]?.winner ?? null;
     }
   }
-
-  console.log(
-    `Converting pick for matchup ${nftPick.id}, round: ${originalMatchup.round}, ` +
-      `top team: ${topTeam?.id}, bottom team: ${bottomTeam?.id}, ` +
-      `region: ${originalMatchup.region}`,
-  );
 
   return {
     ...originalMatchup,
@@ -239,10 +229,6 @@ export const NFTBracketProvider: React.FC<NFTBracketProviderProps> = ({
   // Initialize bracket data when it becomes available and we're on the client
   useEffect(() => {
     if (isClient && matchups?.length && teams.length && metadata.data.picks) {
-      console.log("NFTBracketContext: Initializing with metadata", metadata);
-      console.log("NFTBracketContext: Teams available", teams.length);
-      console.log("NFTBracketContext: Matchups available", matchups.length);
-
       try {
         // Convert NFT picks to UserMatchup format
         const nftUserPicks = metadata.data.picks
@@ -265,8 +251,6 @@ export const NFTBracketProvider: React.FC<NFTBracketProviderProps> = ({
             }
           })
           .filter(Boolean) as UserMatchup[];
-
-        console.log("NFTBracketContext: Converted picks", nftUserPicks.length);
 
         setUserPicks(nftUserPicks);
       } catch (error) {
