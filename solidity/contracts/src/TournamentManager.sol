@@ -124,7 +124,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         uint256 entryFee,
         address paymentToken,
         uint256 startTime
-    ) external onlyOwner returns (uint256) {
+    ) external returns (uint256) {
         if (startTime <= block.timestamp) revert StartTimeMustBeInFuture();
 
         uint256 tournamentId = nextTournamentId++;
