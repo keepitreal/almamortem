@@ -70,7 +70,6 @@ export const Desktop: FC<DesktopProps> = ({ tournamentId, nftUserPicks }) => {
     (matchup) => matchup.round === "Final 4",
   );
 
-  console.log("finalFourMatchups", finalFourMatchups);
   // Find which Final Four matchup corresponds to each side of the bracket
   const leftSideFinalFour = finalFourMatchups.find((matchup) => {
     return matchup.previousMatchupIds.some((prevId) => {
