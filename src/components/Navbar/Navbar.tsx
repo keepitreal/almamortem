@@ -51,7 +51,7 @@ export const Navbar = () => {
         <NavbarItems
           items={[
             { href: "/my-brackets", children: "My Brackets" },
-            { href: "/leaderboard", children: "Leaderboard" },
+            { href: "/bracket/0/leaderboard", children: "Leaderboard" },
             { href: "/contract", children: "Contract" },
           ]}
         />
