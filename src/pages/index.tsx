@@ -26,7 +26,7 @@ export default function Home() {
             <div>
               <button
                 className="btn btn-primary"
-                onClick={() => void router.push("/bracket/build")}
+                onClick={() => void router.push("/bracket/0/build")}
               >
                 Build Your Bracket
               </button>
