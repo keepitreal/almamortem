@@ -75,7 +75,7 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
     ).id;
 
     const mostPickedTeam = teams.data?.find(
-      (team) => team.id === mostPickedTeamId,
+      (team) => team.id.toString() === mostPickedTeamId.toString(),
     );
 
     if (!mostPickedTeam) {
@@ -94,7 +94,7 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
               name: `${APP_NAME} Bracket`,
               description:
                 "A detailed description of my NFT artwork or collectible.",
-              image: mostPickedTeam.logoUrl,
+              image: `${APP_URL}/api/team-image?teamId=${mostPickedTeam.espnId}`,
               external_url: `${APP_URL}`,
               attributes: [
                 {
