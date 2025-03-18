@@ -30,6 +30,14 @@ const config = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/.well-known/farcaster.json',
+        destination: '/api/.well-known/farcaster.json',
+      },
+    ];
+  },
 };
 
 export default config;
