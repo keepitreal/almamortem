@@ -37,7 +37,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   // Generate the frame metadata
   const frameMetadata = JSON.stringify({
     version: "next",
-    imageUrl: `${APP_URL}/api/frame/image`,
+    imageUrl: `${APP_URL}/api/frame-image`,
     button: {
       title: APP_NAME,
       action: {

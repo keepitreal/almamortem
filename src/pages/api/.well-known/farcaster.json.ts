@@ -7,19 +7,19 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const getBaseUrl = () => {
-      return "https://march-madness-onchain.vercel.app";
+      return "https://almamortem.com";
     };
 
   const config = {
     accountAssociation: {
       header:
         "eyJmaWQiOjIxNzI0OCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGViYTc4NzE3YjZmMDU5Q0ZFMGI3NUU3NUMyZWQ0QkI3Y0E2NTE1NEYifQ",
-      payload: "eyJkb21haW4iOiJzdXBlcmJvd2wtb25jaGFpbi52ZXJjZWwuYXBwIn0",
-      signature: "MHgwYmUwMDIyMDYzMmU1Y2RiZTMxNjVhNWIzYTQ2MjM0NDM2MzBkZWNkNTljMDllMTIxNjY1M2M5ZjU4MWU4OTQzNTFlYmYxNjc0MjE2ZDExMzgyOWVkNzJmYWMzOGI5NjRjZWMwZGViYTRjYTJjNjIwNDc3MThjMDBmYWU0MjE1MjFi",
+      payload: "eyJkb21haW4iOiJhbG1hbW9ydGVtLmNvbSJ9",
+      signature: "MHhlMzU5MDBiYWQ0ZTcwYjUwMWY4ZTE4NzgxNWEyMWFjMGQ1ZjBlZmUzZDdlMzhiNzY2MWQ1MTlhMzQ4MGVhMTUzMzZlMDFlZmMyMjQwMTRmYzhjZmE3MjU0OWVlMjNiNDhlODZiYTYxMWRmZDM2ZWI2YTJmZWQ1Y2ZlZmM2ODE1NDFi",
     },
     frame: {
-      version: "0.0.0",
-      name: "March Madness",
+      version: "1",
+      name: "Alma Mortem",
       homeUrl: getBaseUrl(),
       iconUrl: `${getBaseUrl()}/images/icon.png`,
       splashImageUrl: `${getBaseUrl()}/images/logo.png`,
