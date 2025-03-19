@@ -1,5 +1,6 @@
 import {
   FIRST_FOUR_EVENTS_BY_REGION_AND_SEED,
+  firstFourAdvancingTeamsEspnIDs,
   ROUND_NAME_BY_ROUND_ID,
 } from "~/constants";
 import { generateTeamId } from "~/helpers/generateTeamId";
@@ -373,7 +374,11 @@ async function getMatchupsRevised(): Promise<Matchup[]> {
         )
       : null;
 
-    const bottomTeam = bottomTeamIsFirstFour
+    const useFirstFourCombinedTeam =
+      bottomTeamIsFirstFour &&
+      !firstFourAdvancingTeamsEspnIDs.includes(bottomTeamData?.id ?? "");
+
+    const bottomTeam = useFirstFourCombinedTeam
       ? firstFourCombinedTeam
       : bottomTeamData
         ? {
@@ -432,7 +437,7 @@ export const matchupRouter = createTRPCRouter({
       return cachedMatchups;
     }
     const matchups = await getMatchupsRevised();
-    await redis.set(CACHE_KEY, matchups, { ex: 300 }); // Cache for 5 minutes
+    await redis.set(CACHE_KEY, matchups, { ex: 3600 }); // Cache for 5 minutes
     return matchups;
   }),
 });
