@@ -9,6 +9,7 @@ import { useBracket } from "~/context/BracketContext";
 import type { RoundName, Team } from "~/types/bracket";
 import { ROUND_TO_ROUND_ABBREVIATION } from "~/types/bracket";
 import { getBracketHash } from "~/utils/bracketHash";
+import { hasAllWinners } from "~/utils/bracketValidation";
 
 import { Controls } from "./Controls";
 
@@ -25,54 +26,8 @@ interface BracketFooterProps {
   region?: string;
 }
 
-const BracketFooter: FC<BracketFooterProps> = ({
-  completedSelections,
-  totalSelections,
-  onSubmit,
-  isSaving,
-  currentRound,
-  region,
-}) => {
-  return (
-    <div className="sticky bottom-0 z-10 bg-base-300 p-4 shadow-lg">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          {region && (
-            <span className="text-sm font-semibold text-primary">
-              {region} Region
-            </span>
-          )}
-          <span className="text-base">{currentRound}</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm">
-            {completedSelections}/{totalSelections}
-          </span>
-          {completedSelections === totalSelections && (
-            <button
-              onClick={onSubmit}
-              className="btn btn-primary"
-              disabled={isSaving}
-            >
-              Submit Bracket
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export const Mobile: FC<MobileProps> = ({ tournamentId }) => {
-  const {
-    userPicks,
-    setWinner,
-    isLoading,
-    currentMatchup,
-    currentRound,
-    completedSelections,
-    totalSelections,
-  } = useBracket();
+  const { userPicks, setWinner, isLoading, currentMatchup } = useBracket();
   const account = useActiveAccount();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -82,23 +37,6 @@ export const Mobile: FC<MobileProps> = ({ tournamentId }) => {
     setIsSaving(true);
     setWinner(currentMatchup.id, team.id);
     setTimeout(() => setIsSaving(false), 1000);
-  };
-
-  const handleSubmitBracket = async () => {
-    if (!account?.address) {
-      alert("Please connect your wallet to submit your bracket!");
-      return;
-    }
-
-    try {
-      const bracketHash = getBracketHash(userPicks);
-      console.log("Generated Merkle Root:", bracketHash);
-      console.log("Submitting bracket with merkle root:", bracketHash);
-      alert("Bracket submitted successfully!");
-    } catch (error) {
-      console.error("Error generating merkle root:", error);
-      alert("Error submitting bracket. Please try again.");
-    }
   };
 
   if (!currentMatchup) {
@@ -143,6 +81,7 @@ export const Mobile: FC<MobileProps> = ({ tournamentId }) => {
         isSaving={isSaving}
         tournamentId={Number(tournamentId)}
         isMobile
+        disabled={!hasAllWinners(userPicks)}
       />
     </div>
   );

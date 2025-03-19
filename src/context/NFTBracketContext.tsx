@@ -230,6 +230,7 @@ export const NFTBracketProvider: React.FC<NFTBracketProviderProps> = ({
   useEffect(() => {
     if (isClient && matchups?.length && teams.length && metadata.data.picks) {
       try {
+        console.log("metadata.data.picks", metadata.data.picks);
         // Convert NFT picks to UserMatchup format
         const nftUserPicks = metadata.data.picks
           .map((nftPick) => {

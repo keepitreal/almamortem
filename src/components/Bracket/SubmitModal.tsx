@@ -18,9 +18,14 @@ import { Portal } from "../utils/Portal";
 interface SubmitModalProps {
   modalId: string;
   tournamentId: number;
+  disabled?: boolean;
 }
 
-const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
+const SubmitModal: FC<SubmitModalProps> = ({
+  modalId,
+  tournamentId,
+  disabled = false,
+}) => {
   const { address, isConnected } = useAccount();
   const [isUploading, setIsUploading] = useState(false);
   const [ipfsUri, setIpfsUri] = useState<string | null>(null);
@@ -122,7 +127,6 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
           },
         ],
       });
-      console.log({ uri });
       setIpfsUri(uri);
     } catch (error) {
       toast.error("Error uploading bracket to IPFS");
@@ -134,16 +138,29 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
 
   return (
     <>
-      <label htmlFor={modalId} className="btn btn-primary">
+      <label
+        htmlFor={modalId}
+        className={`btn btn-primary ${disabled ? "btn-disabled" : ""}`}
+        onClick={(e) => {
+          if (disabled) {
+            e.preventDefault();
+            return;
+          }
+        }}
+      >
         Submit Bracket
       </label>
 
       <Portal>
         <input
           type="checkbox"
-          onClick={() => handleModalOpen()}
           id={modalId}
           className="modal-toggle"
+          onChange={() => {
+            if (!disabled) {
+              void handleModalOpen();
+            }
+          }}
         />
         <div className="submit-modal modal" role="dialog">
           <div className="modal-box">
@@ -168,7 +185,7 @@ const SubmitModal: FC<SubmitModalProps> = ({ modalId, tournamentId }) => {
                 <TransactionButton
                   className="btn btn-primary rounded-none uppercase italic"
                   text="Submit Bracket"
-                  disabled={calls.length === 0 || isUploading}
+                  disabled={calls.length === 0 || isUploading || disabled}
                 />
               </Transaction>
             </div>

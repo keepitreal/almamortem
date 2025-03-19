@@ -5,6 +5,7 @@ import { toTokens } from "thirdweb";
 import { useBracket } from "~/context/BracketContext";
 import { useEthPrice } from "~/hooks/useEthPrice";
 import { useTournament } from "~/hooks/useTournament";
+import { hasAllWinners } from "~/utils/bracketValidation";
 
 import BracketOwner from "./BracketOwner";
 import BracketScore from "./Score";
@@ -57,15 +58,16 @@ interface ControlsProps {
   tournamentId?: number;
   readOnly?: boolean;
   isMobile?: boolean;
+  disabled?: boolean;
 }
 
 export const Controls = ({
   tournamentId = 0,
-  isSaving = false,
   readOnly = false,
   isMobile = false,
+  disabled = false,
 }: ControlsProps) => {
-  const { completedSelections, totalSelections } = useBracket();
+  const { completedSelections, totalSelections, userPicks } = useBracket();
   const { paymentTokenMetadata, entryFee } = useTournament(tournamentId);
   const [hasPicks, setHasPicks] = useState(false);
 
@@ -89,6 +91,7 @@ export const Controls = ({
     }
   };
 
+  const canSubmit = hasAllWinners(userPicks) && !disabled;
   if (isMobile) {
     return (
       <div className="controls fixed bottom-0 left-0 right-0 z-50 border-t-2 border-primary bg-primary-content/80 backdrop-blur-sm">
@@ -99,7 +102,11 @@ export const Controls = ({
             </div>
           </div>
           <div className="flex w-1/2 items-center justify-end">
-            <SubmitModal modalId="submit-bracket" tournamentId={tournamentId} />
+            <SubmitModal
+              modalId="submit-bracket"
+              tournamentId={tournamentId}
+              disabled={!canSubmit}
+            />
           </div>
         </div>
       </div>
@@ -157,6 +164,7 @@ export const Controls = ({
                 <SubmitModal
                   modalId="submit-bracket"
                   tournamentId={tournamentId}
+                  disabled={!canSubmit}
                 />
               </div>
             </>

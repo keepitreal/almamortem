@@ -1,6 +1,5 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import { useRouter } from "next/router";
 
 import TraditionalBracket from "~/components/Bracket/TraditionalBracket";
 import { APP_NAME } from "~/constants";
@@ -8,13 +7,8 @@ import { useBracket } from "~/context/BracketContext";
 import type { Team } from "~/types/bracket";
 
 const ViewBracket: NextPage = () => {
-  const router = useRouter();
-  const {
-    userPicks,
-    currentMatchupId,
-    setCurrentMatchupId,
-    setWinner,
-  } = useBracket();
+  const { userPicks, currentMatchupId, setCurrentMatchupId, setWinner } =
+    useBracket();
 
   const handleMatchupClick = (matchupId: number) => {
     setCurrentMatchupId(matchupId);
@@ -40,4 +34,4 @@ const ViewBracket: NextPage = () => {
   );
 };
 
-export default ViewBracket; 
+export default ViewBracket;
