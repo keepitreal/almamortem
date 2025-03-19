@@ -72,11 +72,9 @@ export const Leaderboard: NextPage<{
 }> = ({ tournamentId, nfts }) => {
   const { data: matchups, isLoading: isLoadingMatchups } = useMatchups();
 
-  if (isLoadingMatchups || !matchups) {
-    return <div>Loading...</div>;
-  }
-
   const teamsById = useMemo(() => {
+    if (!matchups) return {};
+
     const teams: Record<number, Team> = {};
     matchups
       .filter((m) => m.round === "Round of 64")
@@ -95,6 +93,10 @@ export const Leaderboard: NextPage<{
     () => nfts.map((nft) => decorateNFT(nft, teamsById)),
     [nfts, teamsById],
   );
+
+  if (isLoadingMatchups || !matchups) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="mx-auto mt-20 flex max-w-4xl flex-col gap-4">

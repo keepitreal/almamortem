@@ -8,6 +8,7 @@ import { ROUND_NAMES } from "~/constants";
 import { useBracket } from "~/context/BracketContext";
 import { useNFTBracket } from "~/context/NFTBracketContext";
 import type { Team, UserMatchup } from "~/types/bracket";
+import { hasAllWinners } from "~/utils/bracketValidation";
 
 import { Controls } from "./Controls";
 import { FinalRounds } from "./FinalRounds";
@@ -162,6 +163,7 @@ export const Desktop: FC<DesktopProps> = ({ tournamentId, nftUserPicks }) => {
         isSaving={isSaving}
         tournamentId={Number(tournamentId)}
         readOnly={readOnly}
+        disabled={!hasAllWinners(userPicks)}
       />
     </div>
   );
