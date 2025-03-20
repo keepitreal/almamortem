@@ -6,6 +6,12 @@ export type Leader = {
   } | null;
   accuracy: number;
   maxAccuracy: number;
+  score: number;
   owner: string | undefined;
   nftId: string;
+};
+
+export type Leaderboard = {
+  id: number;
+  score: number;
 };

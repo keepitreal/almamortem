@@ -35,7 +35,7 @@ export const TOURNAMENT_ADDRESS: Record<number, Address> = {
 };
 
 export const ORACLE_ADDRESS: Record<number, Address> = {
-  [base.id]: "0xbb0bC2F53eAC29Ca696671F5Ab5740274103d38C",
+  [base.id]: "0xdad0a4b5b845df3897489a4eaf638e680e427c58",
   [baseSepolia.id]: "0x4008119f8E3Dd2a5dC28a04CfF36093c52EB2d17",
 };
 
