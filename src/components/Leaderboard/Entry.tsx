@@ -43,13 +43,13 @@ export const LeaderboardEntry: FC<LeaderboardEntryProps> = ({
 
       {/* Accuracy Column */}
       <div className="w-1/6 text-center">
-        <span className="font-mono text-lg">{leader.accuracy}%</span>
+        <span className="font-mono text-lg">{leader.score}</span>
       </div>
 
       {/* Max Accuracy Column */}
-      <div className="w-1/6 text-center">
+      {/* <div className="w-1/6 text-center">
         <span className="font-mono text-lg">{leader.maxAccuracy}%</span>
-      </div>
+      </div> */}
 
       {/* Champion Column */}
       <div className="flex w-1/3 items-center justify-end gap-2">

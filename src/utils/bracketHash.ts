@@ -44,8 +44,8 @@ function calculateTeamWins(bracket: UserMatchup[]): Map<number, number> {
 
       // For each win, also verify that the team was in this matchup
       if (
-        !matchup.bottomTeam?.id.toString().includes(teamId.toString()) &&
-        !matchup.topTeam?.id.toString().includes(teamId.toString())
+        !matchup.bottomTeam?.id?.toString().includes(teamId.toString()) &&
+        !matchup.topTeam?.id?.toString().includes(teamId.toString())
       ) {
         throw new Error(
           `Team ${teamId} won matchup ${matchup.id} but wasn't a participant`,

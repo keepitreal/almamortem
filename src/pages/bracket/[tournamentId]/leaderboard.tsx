@@ -7,8 +7,9 @@ import { getNFTs } from "thirdweb/extensions/erc721";
 import { LeaderboardEntry } from "~/components/Leaderboard/Entry";
 import { CLIENT, DEFAULT_CHAIN, NFT_ADDRESS } from "~/constants";
 import { useMatchups } from "~/hooks/useMatchups";
-import { type Matchup, type NFTPick, type Team } from "~/types/bracket";
-import type { Leader } from "~/types/leader";
+import { type NFTPick, type Team } from "~/types/bracket";
+import type { Leader, Leaderboard as LeaderboardType } from "~/types/leader";
+import { api } from "~/utils/api";
 
 // make get server side props
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
@@ -42,7 +43,7 @@ interface NFTMetadata {
   };
 }
 
-function decorateNFT(nft: NFT, teamsById: Record<number, Team>): Leader {
+function decorateNFT(nft: NFT, teamsById: Record<number, Team>, leaderboard: LeaderboardType[]): Leader {
   const metadata = nft.metadata as unknown as NFTMetadata;
   const championshipPick = metadata.data?.picks?.find(
     (pick: NFTPick) => pick.round === "Championship",
@@ -61,6 +62,7 @@ function decorateNFT(nft: NFT, teamsById: Record<number, Team>): Leader {
       : null,
     accuracy: 0,
     maxAccuracy: 100,
+    score: leaderboard.find((l) => l.id === Number(nft.id))?.score ?? 0,
     owner: typeof nft.owner === "string" ? nft.owner : undefined,
     nftId: nft.id.toString(),
   };
@@ -71,6 +73,9 @@ export const Leaderboard: NextPage<{
   nfts: NFT[];
 }> = ({ tournamentId, nfts }) => {
   const { data: matchups, isLoading: isLoadingMatchups } = useMatchups();
+  const { data: leaderboard } = api.leaderboard.getByTournamentId.useQuery({
+    tournamentId: Number(tournamentId),
+  });
 
   const teamsById = useMemo(() => {
     if (!matchups) return {};
@@ -90,8 +95,8 @@ export const Leaderboard: NextPage<{
   }, [matchups]);
 
   const decoratedNfts = useMemo(
-    () => nfts.map((nft) => decorateNFT(nft, teamsById)),
-    [nfts, teamsById],
+    () => nfts.map((nft) => decorateNFT(nft, teamsById, leaderboard ?? [])),
+    [nfts, teamsById, leaderboard],
   );
 
   if (isLoadingMatchups || !matchups) {
@@ -103,14 +108,13 @@ export const Leaderboard: NextPage<{
       {/* Headers */}
       <div className="flex w-full items-center justify-between rounded-lg bg-base-200 px-8 pt-4 font-sans font-bold">
         <div className="w-1/3">Player</div>
-        <div className="w-1/6 text-center">Accuracy</div>
-        <div className="w-1/6 text-center">Max. Accuracy</div>
+        <div className="w-1/6 text-center">Score</div>
         <div className="w-1/3 text-right">Overall Champion</div>
       </div>
 
       {/* Entries */}
       <div className="flex flex-col gap-2">
-        {decoratedNfts.map((leader, index) => (
+        {decoratedNfts.sort((a, b) => b.score - a.score).map((leader, index) => (
           <LeaderboardEntry
             key={nfts[index]?.id}
             leader={leader}
