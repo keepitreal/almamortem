@@ -5,6 +5,7 @@ import { getContract } from "thirdweb/contract";
 import { getNFTs } from "thirdweb/extensions/erc721";
 
 import { LeaderboardEntry } from "~/components/Leaderboard/Entry";
+import { RefreshScores } from "~/components/Leaderboard/RefreshScores";
 import { CLIENT, DEFAULT_CHAIN, NFT_ADDRESS } from "~/constants";
 import { useMatchups } from "~/hooks/useMatchups";
 import { type NFTPick, type Team } from "~/types/bracket";
@@ -105,6 +106,9 @@ export const Leaderboard: NextPage<{
 
   return (
     <div className="mx-auto mt-20 flex max-w-4xl flex-col gap-4">
+      <div className="flex justify-end">
+        <RefreshScores />
+      </div>
       {/* Headers */}
       <div className="flex w-full items-center justify-between rounded-lg bg-base-200 px-8 pt-4 font-sans font-bold">
         <div className="w-1/3">Player</div>
