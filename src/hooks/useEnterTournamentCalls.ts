@@ -9,13 +9,8 @@ import {
   enterTournament,
   getTournament,
 } from "~/thirdweb/84532/0x136548e2e4a9be1efb2e3e72e14afbbe829029b0";
+import { type Call } from "~/types/call";
 import { getBracketHash } from "~/utils/bracketHash";
-
-type Call = {
-  to: `0x${string}`;
-  data: `0x${string}`;
-  value?: bigint;
-};
 
 export const useEnterTournamentCalls = ({
   address,

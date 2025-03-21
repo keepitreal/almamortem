@@ -19,7 +19,7 @@ export const CLIENT = createThirdwebClient({
 
 export const CHAINLINK_SUBSCRIPTION_ID: Record<number, bigint> = {
   [baseSepolia.id]: 290n,
-  [base.id]: 6n,
+  [base.id]: 50n,
 };
 export const CHAINLINK_JOB_ID: Record<number, Hex> = {
   [base.id]:
