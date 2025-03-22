@@ -1,0 +1,189 @@
+{
+  "id": "2752",
+  "uid": "s:40~l:41~t:2752",
+  "slug": "xavier-musketeers",
+  "abbreviation": "XAV",
+  "displayName": "Xavier Musketeers",
+  "shortDisplayName": "Xavier",
+  "name": "Musketeers",
+  "nickname": "Xavier",
+  "location": "Xavier",
+  "color": "21304e",
+  "alternateColor": "a5a7a8",
+  "isActive": true,
+  "isAllStar": false,
+  "logos": [
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2752.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "default"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2752.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "dark"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/8d8b7bf1-76b6-2bcd-1035-6c7a2b192a82/logos/primary_logo_on_white_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_white_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/8d8b7bf1-76b6-2bcd-1035-6c7a2b192a82/logos/primary_logo_on_black_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_black_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/8d8b7bf1-76b6-2bcd-1035-6c7a2b192a82/logos/primary_logo_on_primary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_primary_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/8d8b7bf1-76b6-2bcd-1035-6c7a2b192a82/logos/primary_logo_on_secondary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_secondary_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/8d8b7bf1-76b6-2bcd-1035-6c7a2b192a82/logos/secondary_logo_on_white_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_white_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/8d8b7bf1-76b6-2bcd-1035-6c7a2b192a82/logos/secondary_logo_on_black_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_black_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/8d8b7bf1-76b6-2bcd-1035-6c7a2b192a82/logos/secondary_logo_on_primary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_primary_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/8d8b7bf1-76b6-2bcd-1035-6c7a2b192a82/logos/secondary_logo_on_secondary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_secondary_color"
+      ],
+      "width": 500,
+      "height": 500
+    }
+  ],
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [
+        "clubhouse",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/_/id/2752/xavier-musketeers",
+      "text": "Clubhouse",
+      "shortText": "Clubhouse",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "roster",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/roster/_/id/2752",
+      "text": "Roster",
+      "shortText": "Roster",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "stats",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/stats/_/id/2752",
+      "text": "Statistics",
+      "shortText": "Statistics",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "schedule",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/schedule/_/id/2752",
+      "text": "Schedule",
+      "shortText": "Schedule",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "tickets",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.vividseats.com/xavier-musketeers-mens-basketball-tickets--sports-ncaa-basketball/performer/948?wsUser=717",
+      "text": "Tickets",
+      "shortText": "Tickets",
+      "isExternal": true,
+      "isPremium": false,
+      "isHidden": false
+    }
+  ]
+}

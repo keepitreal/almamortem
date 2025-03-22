@@ -1,0 +1,14 @@
+{
+  "name": "team-finder",
+  "version": "1.0.0",
+  "description": "Script to find team information from ESPN API",
+  "main": "findTeam.ts",
+  "scripts": {
+    "start": "ts-node findTeam.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+} 
