@@ -1,0 +1,189 @@
+{
+  "id": "116",
+  "uid": "s:40~l:41~t:116",
+  "slug": "mount-st-marys-mountaineers",
+  "abbreviation": "MSM",
+  "displayName": "Mount St. Mary's Mountaineers",
+  "shortDisplayName": "Mount St Marys",
+  "name": "Mountaineers",
+  "nickname": "Mount St Marys",
+  "location": "Mount St. Mary's",
+  "color": "005596",
+  "alternateColor": "ebebeb",
+  "isActive": true,
+  "isAllStar": false,
+  "logos": [
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/116.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "default"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/116.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "dark"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/43142350-e802-3825-cd97-20bc807c5496/logos/primary_logo_on_white_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_white_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/43142350-e802-3825-cd97-20bc807c5496/logos/primary_logo_on_black_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_black_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/43142350-e802-3825-cd97-20bc807c5496/logos/primary_logo_on_primary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_primary_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/43142350-e802-3825-cd97-20bc807c5496/logos/primary_logo_on_secondary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_secondary_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/43142350-e802-3825-cd97-20bc807c5496/logos/secondary_logo_on_white_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_white_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/43142350-e802-3825-cd97-20bc807c5496/logos/secondary_logo_on_black_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_black_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/43142350-e802-3825-cd97-20bc807c5496/logos/secondary_logo_on_primary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_primary_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/43142350-e802-3825-cd97-20bc807c5496/logos/secondary_logo_on_secondary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_secondary_color"
+      ],
+      "width": 500,
+      "height": 500
+    }
+  ],
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [
+        "clubhouse",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/_/id/116/mount-st-marys-mountaineers",
+      "text": "Clubhouse",
+      "shortText": "Clubhouse",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "roster",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/roster/_/id/116",
+      "text": "Roster",
+      "shortText": "Roster",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "stats",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/stats/_/id/116",
+      "text": "Statistics",
+      "shortText": "Statistics",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "schedule",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/schedule/_/id/116",
+      "text": "Schedule",
+      "shortText": "Schedule",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "tickets",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.vividseats.com/mount-st-marys-mountaineers-mens-basketball-tickets--sports-basketball/performer/134082?wsUser=717",
+      "text": "Tickets",
+      "shortText": "Tickets",
+      "isExternal": true,
+      "isPremium": false,
+      "isHidden": false
+    }
+  ]
+}

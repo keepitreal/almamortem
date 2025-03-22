@@ -1,0 +1,189 @@
+{
+  "id": "153",
+  "uid": "s:40~l:41~t:153",
+  "slug": "north-carolina-tar-heels",
+  "abbreviation": "UNC",
+  "displayName": "North Carolina Tar Heels",
+  "shortDisplayName": "North Carolina",
+  "name": "Tar Heels",
+  "nickname": "North Carolina",
+  "location": "North Carolina",
+  "color": "7bafd4",
+  "alternateColor": "13294b",
+  "isActive": true,
+  "isAllStar": false,
+  "logos": [
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/153.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "default"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/153.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "dark"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/5e350267-1bca-921e-0a5d-21c6787f5684/logos/primary_logo_on_white_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_white_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/5e350267-1bca-921e-0a5d-21c6787f5684/logos/primary_logo_on_black_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_black_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/5e350267-1bca-921e-0a5d-21c6787f5684/logos/primary_logo_on_primary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_primary_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/5e350267-1bca-921e-0a5d-21c6787f5684/logos/primary_logo_on_secondary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "primary_logo_on_secondary_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/5e350267-1bca-921e-0a5d-21c6787f5684/logos/secondary_logo_on_white_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_white_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/5e350267-1bca-921e-0a5d-21c6787f5684/logos/secondary_logo_on_black_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_black_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/5e350267-1bca-921e-0a5d-21c6787f5684/logos/secondary_logo_on_primary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_primary_color"
+      ],
+      "width": 500,
+      "height": 500
+    },
+    {
+      "href": "https://a.espncdn.com/guid/5e350267-1bca-921e-0a5d-21c6787f5684/logos/secondary_logo_on_secondary_color.png",
+      "alt": "",
+      "rel": [
+        "full",
+        "secondary_logo_on_secondary_color"
+      ],
+      "width": 500,
+      "height": 500
+    }
+  ],
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [
+        "clubhouse",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/_/id/153/north-carolina-tar-heels",
+      "text": "Clubhouse",
+      "shortText": "Clubhouse",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "roster",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/roster/_/id/153",
+      "text": "Roster",
+      "shortText": "Roster",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "stats",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/stats/_/id/153",
+      "text": "Statistics",
+      "shortText": "Statistics",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "schedule",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/team/schedule/_/id/153",
+      "text": "Schedule",
+      "shortText": "Schedule",
+      "isExternal": false,
+      "isPremium": false,
+      "isHidden": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "tickets",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.vividseats.com/north-carolina-tar-heels-mens-basketball-tickets--sports-ncaa-basketball/performer/3274?wsUser=717",
+      "text": "Tickets",
+      "shortText": "Tickets",
+      "isExternal": true,
+      "isPremium": false,
+      "isHidden": false
+    }
+  ]
+}

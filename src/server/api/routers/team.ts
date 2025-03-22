@@ -94,9 +94,9 @@ export async function getAllTeams(): Promise<Team[]> {
     };
   });
 
-  // Cache the results for 1 hour
+  // Cache the results for 1 day since the data doesn't change
   await redis.set("espn-teams", teams, {
-    ex: 3600, // 1 hour in seconds
+    ex: 86400, // 1 day in seconds
   });
 
   return teams;

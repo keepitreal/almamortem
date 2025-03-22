@@ -58,7 +58,7 @@ export const INITIAL_SEED_PAIRS = [
   [2, 15],
 ];
 
-export const firstFourAdvancingTeamsEspnIDs = ["2011"];
+export const firstFourAdvancingTeamsEspnIDs = ["2011", "2752", "153", "116"];
 
 export const ROUND_NAME_BY_ROUND_ID: Record<number, RoundName> = {
   1: "Round of 64",
